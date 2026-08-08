@@ -140,10 +140,12 @@
 }
 
 .lobby-card .btn-primary {
-  width: 100%;
-  max-width: 260px;
-  height: 46px;
-  display: flex;
+  width: auto;
+  padding: 0.65rem 1.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
