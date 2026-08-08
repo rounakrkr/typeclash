@@ -33,9 +33,10 @@ export function renderLobby(appEl, router) {
         <h3>Create Room</h3>
         <p>Start a 4-player room and invite friends</p>
         <div class="duration-pills" id="lobby-duration">
-          <button class="pill" data-dur="15">15s</button>
           <button class="pill active" data-dur="30">30s</button>
+          <button class="pill" data-dur="45">45s</button>
           <button class="pill" data-dur="60">60s</button>
+          <button class="pill" data-dur="90">90s</button>
         </div>
         <button class="btn btn-primary" id="btn-create">Create Room</button>
       </div>
