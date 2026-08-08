@@ -72,13 +72,13 @@ export function renderLeaderboard(appEl, router) {
     { rank: 5, name: 'SRM University', city: 'Chennai', typists: 21, avgWpm: 108, totalElo: 1890 }
   ];
 
-  // Weekly speed matching the global top players
+  // Weekly speed — highest raw WPM recorded across practice modes this week
   const sampleWeekly = [
-    { rank: 1, username: 'SpeedDemon', college: 'KIIT University', wpm: 142, mode: '30s Mode' },
-    { rank: 2, username: 'HyperType', college: 'IIT Bombay', wpm: 138, mode: '60s Mode' },
-    { rank: 3, username: 'KeyboardGod', college: 'BITS Pilani', wpm: 135, mode: '15s Mode' },
-    { rank: 4, username: 'NinjaKeys', college: 'VIT Vellore', wpm: 129, mode: '30s Mode' },
-    { rank: 5, username: myUsername, college: myCollege, wpm: myBestWpm, mode: '60s Mode', isMe: true }
+    { rank: 1, username: 'LightningFast', college: 'KIIT University', wpm: 158, mode: '15s Sprint' },
+    { rank: 2, username: 'SpeedDemon', college: 'KIIT University', wpm: 146, mode: '30s Mode' },
+    { rank: 3, username: 'HyperType', college: 'IIT Bombay', wpm: 140, mode: '60s Mode' },
+    { rank: 4, username: 'KeyboardGod', college: 'BITS Pilani', wpm: 135, mode: '15s Sprint' },
+    { rank: 5, username: myUsername, college: myCollege, wpm: myBestWpm, mode: '30s Mode', isMe: true }
   ];
 
   function renderTable(tab) {
