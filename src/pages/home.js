@@ -105,19 +105,33 @@ export function renderHome(appEl, router) {
   // Punctuation toggle (default: OFF — MonkeyType style)
   let punctuation = false;
   const punctuationBtn = container.querySelector('#punctuation-toggle');
-  punctuationBtn.addEventListener('click', () => {
-    punctuation = !punctuation;
-    punctuationBtn.classList.toggle('active', punctuation);
-  });
 
   // Voice mode toggle
   let voiceMode = false;
   const voiceBtn = container.querySelector('#voice-toggle');
+
+  punctuationBtn.addEventListener('click', () => {
+    punctuation = !punctuation;
+    punctuationBtn.classList.toggle('active', punctuation);
+
+    // Mutual Exclusivity: Turning ON Punctuation turns OFF Voice
+    if (punctuation) {
+      voiceMode = false;
+      voiceBtn.classList.remove('active');
+    }
+  });
+
   if (tts.isSupported()) {
     tts.init();
     voiceBtn.addEventListener('click', () => {
       voiceMode = !voiceMode;
       voiceBtn.classList.toggle('active', voiceMode);
+
+      // Mutual Exclusivity: Turning ON Voice turns OFF Punctuation
+      if (voiceMode) {
+        punctuation = false;
+        punctuationBtn.classList.remove('active');
+      }
     });
   } else {
     voiceBtn.style.display = 'none';
