@@ -80,7 +80,7 @@
   justify-content: space-between;
   background: var(--bg-primary);
   border: 1px solid var(--bg-tertiary);
-  border-radius: var(--radius-md);
+  border-radius: 9999px;
   padding: 4px;
 }
 
@@ -90,7 +90,7 @@
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  border-radius: var(--radius-sm);
+  border-radius: 9999px;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
