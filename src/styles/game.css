@@ -50,32 +50,33 @@
   animation: pulse 1s infinite;
 }
 
-/* ── Text Display Area (MonkeyType Style 3-Line Carousel View) ── */
+/* ── Text Display Area ── */
 .text-display {
   font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
-  font-size: 1.5rem;
-  line-height: 2.2;
-  letter-spacing: 0.03em;
+  font-size: 1.45rem;
+  line-height: 2.1;
+  letter-spacing: 0.02em;
   color: var(--upcoming);
   overflow: hidden;
-  height: 155px; /* 3-line MonkeyType viewport */
+  height: 150px; /* exactly 3 lines visible at a time */
   position: relative;
   user-select: none;
-  padding: 0.5rem 0.75rem;
+  padding: 0.25rem 0;
   background: transparent;
   border: none;
 }
 
+/* Word container — flex-wrap so words never split mid-letter */
 .text-words {
   display: flex;
   flex-wrap: wrap;
+  gap: 0 0.65em;
   align-content: flex-start;
-  gap: 0 0.55em;
 }
 
+/* Each word is an inline-flex unit */
 .word {
   display: inline-flex;
-  margin-bottom: 0.2rem;
 }
 
 /* ── Character Styles ── */
@@ -94,37 +95,42 @@
 
 .char-incorrect {
   color: var(--incorrect);
-  background: rgba(248, 113, 113, 0.15);
+  background: rgba(248, 113, 113, 0.12);
   border-radius: 2px;
   text-decoration: underline;
   text-decoration-color: rgba(248, 113, 113, 0.6);
   text-underline-offset: 4px;
 }
 
-/* Floating Smooth Hardware-Accelerated Caret Cursor */
+/* Space character — invisible but takes space */
+.char-space-char {
+  color: transparent !important;
+  text-decoration: none !important;
+  background: transparent !important;
+}
+
+/* ── Smooth GPU-accelerated Floating Caret ── */
 .typing-caret {
   position: absolute;
   top: 0;
   left: 0;
-  width: 2.5px;
-  height: 1.4em;
+  width: 2px;
+  height: 1.6em;
   background: var(--accent-primary);
   border-radius: 2px;
-  box-shadow: 0 0 10px var(--accent-glow);
-  transition: transform 0.06s cubic-bezier(0, 0.9, 0.1, 1);
+  box-shadow: 0 0 8px var(--accent-glow), 0 0 2px var(--accent-primary);
   pointer-events: none;
-  z-index: 10;
+  z-index: 20;
+  will-change: transform;
+  /* blink when idle */
   animation: typing-cursor-blink 1.1s step-end infinite;
 }
+/* Stop blinking while actively typing */
 .typing .typing-caret {
   animation: none;
 }
 
-/* Word space */
-.char-space {
-  display: inline-block;
-  width: 0.55em;
-}
+
 
 /* ── Game Info ── */
 .game-info {
