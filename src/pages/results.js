@@ -185,6 +185,14 @@ export function renderResults(appEl, router) {
     router.navigate('/history');
   });
 
+  const homeBtn = document.getElementById('btn-home');
+  if (homeBtn) {
+    homeBtn.addEventListener('click', () => {
+      cleanup();
+      router.navigate('/');
+    });
+  }
+
   document.getElementById('btn-share').addEventListener('click', async () => {
     const shareBtn = document.getElementById('btn-share');
     shareBtn.textContent = '⏳ Generating...';
