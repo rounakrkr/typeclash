@@ -70,30 +70,39 @@
   line-height: 1.5;
 }
 
-/* ── Duration Pills ── */
+/* ── Duration Pills (Segmented Control) ── */
 .duration-pills {
+  width: 100%;
+  max-width: 260px;
+  height: 52px;
   display: flex;
-  gap: 0.35rem;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-full);
-  padding: 0.25rem;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-primary);
   border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: 4px;
 }
 
 .duration-pills .pill {
+  flex: 1;
+  height: 100%;
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: 0.45rem 0.9rem;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-weight: 500;
-  font-size: 0.875rem;
+  font-weight: 600;
+  font-size: 0.85rem;
   font-family: 'JetBrains Mono', monospace;
   transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .duration-pills .pill:hover:not(.active) {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
 }
 .duration-pills .pill.active {
   background: var(--accent-primary);
@@ -104,17 +113,18 @@
 /* ── Room Code Input ── */
 .room-code-input {
   width: 100%;
-  max-width: 200px;
-  padding: 0.8rem 1rem;
+  max-width: 260px;
+  height: 52px;
+  padding: 0 1rem;
   background: var(--bg-primary);
   border: 1px solid var(--bg-tertiary);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.75rem;
+  font-size: 1.4rem;
   font-weight: 700;
   text-align: center;
-  letter-spacing: 0.5em;
+  letter-spacing: 0.4em;
   text-transform: uppercase;
   transition: border-color var(--transition-fast);
   outline: none;
@@ -122,11 +132,20 @@
 .room-code-input::placeholder {
   color: var(--text-secondary);
   opacity: 0.4;
-  letter-spacing: 0.5em;
+  letter-spacing: 0.4em;
 }
 .room-code-input:focus {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.lobby-card .btn-primary {
+  width: 100%;
+  max-width: 260px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ── Waiting State ── */
