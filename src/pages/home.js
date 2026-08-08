@@ -74,20 +74,20 @@ export function renderHome(appEl, router) {
     </div>
 
     <div class="feature-cards">
-      <div class="feature-card card-glass" id="challenge-card" style="cursor:pointer;">
+      <div class="feature-card card-glass" id="matchmaking-card" style="cursor:pointer;">
         <div class="feature-icon">⚔️</div>
         <h3>Real-time Battles</h3>
-        <p>4-Player Lobby</p>
+        <p>1v1 Ranked Matchmaking</p>
       </div>
       <div class="feature-card card-glass" id="rankings-card" style="cursor:pointer;">
         <div class="feature-icon">🏆</div>
         <h3>Global Rankings</h3>
         <p>College & World Top</p>
       </div>
-      <div class="feature-card card-glass" id="async-card">
-        <div class="feature-icon">🔗</div>
+      <div class="feature-card card-glass" id="challenge-card" style="cursor:pointer;">
+        <div class="feature-icon">🎮</div>
         <h3>Challenge Friends</h3>
-        <p>Share link after test!</p>
+        <p>Custom Room & Code</p>
       </div>
     </div>
 
@@ -148,11 +148,19 @@ export function renderHome(appEl, router) {
     });
   }
 
-  // Real-time Matchmaking card
+  // Real-time Matchmaking card (1v1)
+  const matchmakingCard = container.querySelector('#matchmaking-card');
+  if (matchmakingCard) {
+    matchmakingCard.addEventListener('click', () => {
+      router.navigate('/matchmaking');
+    });
+  }
+
+  // Challenge Friends card (Custom Room & Code)
   const challengeCard = container.querySelector('#challenge-card');
   if (challengeCard) {
     challengeCard.addEventListener('click', () => {
-      router.navigate('/matchmaking');
+      router.navigate('/lobby');
     });
   }
 
