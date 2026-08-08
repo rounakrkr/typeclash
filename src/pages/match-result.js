@@ -1,5 +1,6 @@
 import { renderNavbar } from '../components/navbar.js';
 import { socket } from '../lib/socket.js';
+import { storage } from '../lib/storage.js';
 
 /**
  * Render multi-player match results with full ranked leaderboard (1st - 4th places).
@@ -18,6 +19,11 @@ export function renderMatchResult(appEl, router) {
   // Find my entry
   const myEntry = allResults.find(r => r.socketId === io.id);
   const myRank = myEntry ? myEntry.rank : allResults.length;
+
+  // Save new ELO if this was a ranked match
+  if (myEntry && typeof myEntry.newElo === 'number') {
+    storage.setElo(myEntry.newElo);
+  }
 
   let outcomeLabel = 'MATCH COMPLETE';
   let outcomeClass = 'outcome-draw';
@@ -62,6 +68,7 @@ export function renderMatchResult(appEl, router) {
               <div class="player-stats">
                 <span class="wpm-stat">${Math.round(r.wpm)} <small>WPM</small></span>
                 <span class="acc-stat">${parseFloat((r.accuracy || 0).toFixed(1))}% ACC</span>
+                ${r.eloChange !== undefined ? `<span style="color: ${r.eloChange >= 0 ? 'var(--success, #4ade80)' : 'var(--error, #f87171)'}; font-weight: bold; margin-left: 0.5rem; width: 60px; text-align: right;">${r.eloChange > 0 ? '+' : ''}${r.eloChange} ${r.eloChange >= 0 ? '📈' : '📉'}</span>` : ''}
               </div>
             </div>
           `;

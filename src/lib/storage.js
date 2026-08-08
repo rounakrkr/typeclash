@@ -91,11 +91,20 @@ export const storage = {
   },
 
   getCollege() {
-    return this.get('tc_college', 'General');
+    return localStorage.getItem('tc_college') || '';
   },
 
   setCollege(college) {
-    this.set('tc_college', college || 'General');
+    localStorage.setItem('tc_college', college);
+  },
+
+  // --- Elo Rating ---
+  getElo() {
+    return parseInt(localStorage.getItem('tc_elo')) || 1200;
+  },
+
+  setElo(elo) {
+    localStorage.setItem('tc_elo', elo.toString());
   },
 
   // Challenge links (async 1v1)

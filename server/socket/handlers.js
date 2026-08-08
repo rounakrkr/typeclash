@@ -13,6 +13,9 @@ const activeUsernames = new Map(); // username → socketId
 /** Rematch pending: oldRoomCode → { requesterId, newRoomCode, duration } */
 const rematchPending = new Map();
 
+/** Queue for 1v1 Matchmaking. Elements: { socketId, username, elo, socket } */
+const matchmakingQueue = [];
+
 /**
  * Generate a unique 4-character uppercase alphanumeric room code.
  */
@@ -277,9 +280,66 @@ export function registerSocketHandlers(io) {
       }
     });
 
+    // ── matchmaking:join ────────────────────────────────────────────
+    socket.on('matchmaking:join', ({ elo = 1200 }) => {
+      const username = socket.data.username || 'Player';
+      
+      // If already in queue, ignore
+      if (matchmakingQueue.find(p => p.socketId === socket.id)) return;
+
+      // Check if someone else is in queue
+      if (matchmakingQueue.length > 0) {
+        const opponent = matchmakingQueue.shift();
+        
+        // Match found! Create a ranked room
+        const roomCode = generateRoomCode();
+        const room = new GameRoom(roomCode, { duration: 60, isRanked: true });
+        
+        // Add Opponent
+        room.addPlayer(opponent.socketId, opponent.username, opponent.elo);
+        socketToRoom.set(opponent.socketId, roomCode);
+        opponent.socket.join(roomCode);
+        opponent.socket.emit('matchmaking:found', { roomCode });
+
+        // Add Me
+        room.addPlayer(socket.id, username, elo);
+        socketToRoom.set(socket.id, roomCode);
+        socket.join(roomCode);
+        socket.emit('matchmaking:found', { roomCode });
+
+        rooms.set(roomCode, room);
+
+        console.log(`Ranked Match started: ${opponent.username} vs ${username} in Room ${roomCode}`);
+
+        // Automatically start the room
+        room.text = getTextForRoom(room.duration);
+        io.to(roomCode).emit('room:starting', {
+          text: room.text.text,
+          duration: room.duration,
+          players: room.getPlayersInfo(),
+          isRanked: true
+        });
+        room.startCountdown(io);
+      } else {
+        // Nobody in queue, join the queue
+        matchmakingQueue.push({ socketId: socket.id, username, elo, socket });
+      }
+    });
+
+    // ── matchmaking:leave ───────────────────────────────────────────
+    socket.on('matchmaking:leave', () => {
+      const idx = matchmakingQueue.findIndex(p => p.socketId === socket.id);
+      if (idx !== -1) {
+        matchmakingQueue.splice(idx, 1);
+      }
+    });
+
     // ── disconnect ──────────────────────────────────────────────────
     socket.on('disconnect', () => {
       console.log(`Player disconnected: ${socket.id}`);
+
+      const qIdx = matchmakingQueue.findIndex(p => p.socketId === socket.id);
+      if (qIdx !== -1) matchmakingQueue.splice(qIdx, 1);
 
       // Free username
       if (socket.data.username) {

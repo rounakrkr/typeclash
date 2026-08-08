@@ -15,6 +15,7 @@ export class GameRoom {
     this.duration = options.duration || 30;
     this.category = options.category || 'all';
     this.punctuation = options.punctuation || false;
+    this.isRanked = options.isRanked || false;
     this.createdAt = Date.now();
     this.gameStartTime = null;
     this.countdownTimer = null;
@@ -28,9 +29,10 @@ export class GameRoom {
    * Add a player to the room.
    * @param {string} socketId
    * @param {string} username
+   * @param {number} elo
    * @returns {{ id: string, socketId: string, isHost: boolean } | null}
    */
-  addPlayer(socketId, username = 'Player') {
+  addPlayer(socketId, username = 'Player', elo = 1200) {
     if (this.isFull()) return null;
 
     const playerId = `player${this.nextPlayerNum++}`;
@@ -39,6 +41,7 @@ export class GameRoom {
     const playerInfo = {
       id: playerId,
       username,
+      elo,
       progress: { position: 0, wpm: 0, accuracy: 100, progressPct: 0 },
       finished: false,
       results: null
@@ -257,6 +260,35 @@ export class GameRoom {
         entries[i].rank = rank;
       }
       rank++;
+    }
+
+    // Ranked 1v1 Elo Calculation
+    if (this.isRanked && entries.length === 2 && entries.every(e => e.finished)) {
+      const p1 = entries[0];
+      const p2 = entries[1];
+      
+      const p1Elo = this.players.get(p1.socketId).elo || 1200;
+      const p2Elo = this.players.get(p2.socketId).elo || 1200;
+
+      // Expected scores
+      const expectedP1 = 1 / (1 + Math.pow(10, (p2Elo - p1Elo) / 400));
+      const expectedP2 = 1 / (1 + Math.pow(10, (p1Elo - p2Elo) / 400));
+
+      // Actual scores (1 for win, 0.5 for draw, 0 for loss)
+      let scoreP1 = 0.5, scoreP2 = 0.5;
+      if (p1.wpm > p2.wpm) { scoreP1 = 1; scoreP2 = 0; }
+      else if (p2.wpm > p1.wpm) { scoreP1 = 0; scoreP2 = 1; }
+
+      // Performance multiplier based on WPM diff (so completely destroying someone gives more points)
+      const wpmDiff = Math.abs(p1.wpm - p2.wpm);
+      // K base is 32. Multiplier grows logarithmically with WPM difference.
+      const kFactor = 32 * (1 + Math.log(wpmDiff + 1) / 3);
+
+      p1.eloChange = Math.round(kFactor * (scoreP1 - expectedP1));
+      p2.eloChange = Math.round(kFactor * (scoreP2 - expectedP2));
+
+      p1.newElo = p1Elo + p1.eloChange;
+      p2.newElo = p2Elo + p2.eloChange;
     }
 
     return entries;

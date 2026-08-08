@@ -148,11 +148,11 @@ export function renderHome(appEl, router) {
     });
   }
 
-  // Battle mode — via Battle Arena card
+  // Real-time Matchmaking card
   const challengeCard = container.querySelector('#challenge-card');
   if (challengeCard) {
     challengeCard.addEventListener('click', () => {
-      router.navigate('/lobby');
+      router.navigate('/matchmaking');
     });
   }
 
