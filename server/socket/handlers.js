@@ -40,7 +40,7 @@ export function registerSocketHandlers(io) {
 
     // ── username:check ──────────────────────────────────────────────
     // New visitor picking a username for the first time
-    socket.on('username:check', ({ username } = {}) => {
+    socket.on('username:check', ({ username, college } = {}) => {
       if (!username || !/^[a-zA-Z0-9_]{3,16}$/.test(username)) {
         return socket.emit('username:taken');
       }
@@ -51,8 +51,9 @@ export function registerSocketHandlers(io) {
       // Reserve username
       activeUsernames.set(username.toLowerCase(), socket.id);
       socket.data.username = username;
-      socket.emit('username:ok', { username });
-      console.log(`Username claimed: "${username}" by ${socket.id}`);
+      socket.data.college = college || 'General';
+      socket.emit('username:ok', { username, college: socket.data.college });
+      console.log(`Username claimed: "${username}" (${socket.data.college}) by ${socket.id}`);
     });
 
     // ── username:register ───────────────────────────────────────────

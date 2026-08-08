@@ -144,10 +144,13 @@ export function showUsernamePrompt(io) {
       setTimeout(() => input.classList.remove('shake'), 400);
     }
 
+    let currentSubmittedCollege = 'General';
+
     submitBtn.addEventListener('click', () => {
       const username = input.value.trim();
       const rawCollege = overlay.querySelector('#college-input').value.trim();
       const college = normalizeCollege(rawCollege);
+      currentSubmittedCollege = college;
       if (!validate(username)) return;
 
       submitBtn.disabled = true;
@@ -158,9 +161,11 @@ export function showUsernamePrompt(io) {
       io.emit('username:check', { username, college });
     });
 
-    function onUsernameOk({ username, college }) {
+    function onUsernameOk(data = {}) {
+      const username = data.username;
+      const college = data.college || currentSubmittedCollege;
       storage.setUsername(username);
-      if (college) storage.setCollege(college);
+      storage.setCollege(college);
       io.off('username:ok', onUsernameOk);
       io.off('username:taken', onUsernameTaken);
 
