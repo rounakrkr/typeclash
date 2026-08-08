@@ -102,16 +102,6 @@ export function renderHome(appEl, router) {
   });
   modeSlot.appendChild(modeSelector);
 
-  // Category selector
-  const catBtns = container.querySelectorAll('.category-pill');
-  catBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      catBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentCategory = btn.dataset.cat;
-    });
-  });
-
   // Punctuation toggle (default: OFF — MonkeyType style)
   let punctuation = false;
   const punctuationBtn = container.querySelector('#punctuation-toggle');
@@ -132,6 +122,33 @@ export function renderHome(appEl, router) {
   } else {
     voiceBtn.style.display = 'none';
   }
+
+  // Category selector
+  const catBtns = container.querySelectorAll('.category-pill');
+  catBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      catBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentCategory = btn.dataset.cat;
+
+      // Strict Rule for Code Category:
+      // Auto-enable Punctuation, auto-disable & lock Voice Mode
+      if (currentCategory === 'code') {
+        punctuation = true;
+        punctuationBtn.classList.add('active');
+
+        voiceMode = false;
+        voiceBtn.classList.remove('active');
+        voiceBtn.style.opacity = '0.35';
+        voiceBtn.style.pointerEvents = 'none';
+        voiceBtn.title = 'Voice mode is disabled for Code';
+      } else {
+        voiceBtn.style.opacity = '1';
+        voiceBtn.style.pointerEvents = 'auto';
+        voiceBtn.title = 'Toggle keystroke sounds & narration';
+      }
+    });
+  });
 
   // Start typing
   const start = () => {
