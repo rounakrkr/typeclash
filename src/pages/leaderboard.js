@@ -82,7 +82,34 @@ export function renderLeaderboard(appEl, router) {
     { rank: 4, username: myUsername, college: myCollege, wpm: 88, elo: '30s Mode', isMe: true }
   ];
 
-  function renderTable(data) {
+  function renderTable(data, tab) {
+    const thead = container.querySelector('thead tr');
+    if (tab === 'global') {
+      thead.innerHTML = `
+        <th style="width: 70px;">Rank</th>
+        <th>Player</th>
+        <th>College / Univ</th>
+        <th>WPM</th>
+        <th>Rating</th>
+      `;
+    } else if (tab === 'college') {
+      thead.innerHTML = `
+        <th style="width: 70px;">Rank</th>
+        <th>College Name</th>
+        <th>City / Branch</th>
+        <th>Avg WPM</th>
+        <th>Total Rating</th>
+      `;
+    } else {
+      thead.innerHTML = `
+        <th style="width: 70px;">Rank</th>
+        <th>Player</th>
+        <th>College / Univ</th>
+        <th>WPM</th>
+        <th>Game Mode</th>
+      `;
+    }
+
     tbody.innerHTML = '';
     data.forEach(item => {
       const tr = document.createElement('tr');
@@ -107,7 +134,7 @@ export function renderLeaderboard(appEl, router) {
     });
   }
 
-  renderTable(sampleGlobal);
+  renderTable(sampleGlobal, 'global');
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -115,9 +142,9 @@ export function renderLeaderboard(appEl, router) {
       tab.classList.add('active');
       currentTab = tab.dataset.tab;
 
-      if (currentTab === 'global') renderTable(sampleGlobal);
-      else if (currentTab === 'college') renderTable(sampleCollege);
-      else if (currentTab === 'weekly') renderTable(sampleWeekly);
+      if (currentTab === 'global') renderTable(sampleGlobal, 'global');
+      else if (currentTab === 'college') renderTable(sampleCollege, 'college');
+      else if (currentTab === 'weekly') renderTable(sampleWeekly, 'weekly');
     });
   });
 }

@@ -74,15 +74,20 @@ export function renderHome(appEl, router) {
     </div>
 
     <div class="feature-cards">
+      <div class="feature-card card-glass" id="challenge-card" style="cursor:pointer;">
+        <div class="feature-icon">⚔️</div>
+        <h3>Real-time Battles</h3>
+        <p>4-Player Lobby</p>
+      </div>
       <div class="feature-card card-glass" id="rankings-card" style="cursor:pointer;">
         <div class="feature-icon">🏆</div>
         <h3>Global Rankings</h3>
         <p>College & World Top</p>
       </div>
-      <div class="feature-card card-glass" id="challenge-card" style="cursor:pointer;">
-        <div class="feature-icon">⚔️</div>
-        <h3>Battle Arena</h3>
-        <p>4-Player Lobby</p>
+      <div class="feature-card card-glass" id="async-card">
+        <div class="feature-icon">🔗</div>
+        <h3>Challenge Friends</h3>
+        <p>Share link after test!</p>
       </div>
     </div>
 

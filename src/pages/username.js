@@ -17,15 +17,15 @@ export function showUsernamePrompt(io) {
         <div class="username-logo">
           <span class="logo-type">type</span><span class="logo-clash">clash</span>
         </div>
-        <h2 class="username-title">Choose your username</h2>
-        <p class="username-subtitle">This will be shown to other players in battles</p>
+        <h2 class="username-title">Complete your profile</h2>
+        <p class="username-subtitle">Choose a username and represent your college!</p>
 
         <div class="username-input-wrap">
           <input
             type="text"
             id="username-input"
             class="username-input"
-            placeholder="e.g. SpeedTyper42"
+            placeholder="Username (e.g. SpeedTyper)"
             maxlength="16"
             autocomplete="off"
             spellcheck="false"
@@ -33,20 +33,20 @@ export function showUsernamePrompt(io) {
           <span class="username-counter" id="username-counter">0/16</span>
         </div>
 
-        <div class="username-input-wrap" style="margin-top: 0.5rem;">
+        <div class="username-input-wrap" style="margin-top: 1rem;">
           <input
             type="text"
             id="college-input"
             class="username-input"
-            style="font-size: 0.95rem; padding-right: 1rem;"
-            placeholder="College / Univ (e.g. KIIT, VIT, IIT)"
-            maxlength="24"
+            style="font-size: 0.95rem;"
+            placeholder="College Name (e.g. KIIT, VIT)"
+            maxlength="32"
             autocomplete="off"
             spellcheck="false"
           >
         </div>
 
-        <p class="username-rules">3–16 characters · letters, numbers, underscores only</p>
+        <p class="username-rules">Username: 3–16 characters · letters, numbers, underscores</p>
         <p class="username-error" id="username-error" style="display:none;"></p>
 
         <button class="btn btn-primary" id="username-submit" disabled>Let's Go →</button>
@@ -57,6 +57,7 @@ export function showUsernamePrompt(io) {
     requestAnimationFrame(() => overlay.classList.add('visible'));
 
     const input = overlay.querySelector('#username-input');
+    const collegeInput = overlay.querySelector('#college-input');
     const submitBtn = overlay.querySelector('#username-submit');
     const errorEl = overlay.querySelector('#username-error');
     const counter = overlay.querySelector('#username-counter');
@@ -74,7 +75,19 @@ export function showUsernamePrompt(io) {
     });
 
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !submitBtn.disabled) submitBtn.click();
+      if (e.key === 'Enter') {
+        if (!collegeInput.value.trim()) {
+          collegeInput.focus();
+        } else if (!submitBtn.disabled) {
+          submitBtn.click();
+        }
+      }
+    });
+
+    collegeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !submitBtn.disabled) {
+        submitBtn.click();
+      }
     });
 
     function showError(msg) {
