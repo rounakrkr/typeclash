@@ -58,13 +58,22 @@ function splitIntoChunks(text, wordsPerChunk = 4) {
   return chunks;
 }
 
+import { storage } from '../lib/storage.js';
+
 /**
  * Render the typing game page.
  * Returns a cleanup function for the router to call when navigating away.
  */
 export function renderGame(appEl, router) {
   const state = router.getState() || {};
-  const duration = state.duration ?? 30;
+
+  // Check URL query param ?challenge=ID
+  const hash = window.location.hash || '';
+  const match = hash.match(/challenge=([^&]+)/);
+  const challengeId = match ? match[1] : (state.challengeId || null);
+  const challengeData = challengeId ? storage.getChallenge(challengeId) : null;
+
+  const duration = challengeData ? challengeData.duration : (state.duration ?? 30);
   const category = state.category || 'words';
   const isPractice = duration === 0;
   const voiceMode = state.voiceMode || false;
@@ -74,7 +83,9 @@ export function renderGame(appEl, router) {
 
   // ── Get text passage ──
   let textObj;
-  if (textId) {
+  if (challengeData) {
+    textObj = { text: challengeData.text };
+  } else if (textId) {
     // Retry — use the same text
     textObj = getTextById(textId);
   }
@@ -350,7 +361,9 @@ export function renderGame(appEl, router) {
       punctuation,
       voiceMode,
       elapsedMs: elapsed,
-      textId: textObj.id
+      textId: textObj.id,
+      text,
+      challengeData
     });
   }
 

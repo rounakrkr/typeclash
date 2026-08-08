@@ -29,6 +29,7 @@ import { renderHistory } from './pages/history.js';
 import { renderLobby } from './pages/lobby.js';
 import { renderBattle } from './pages/battle.js';
 import { renderMatchResult } from './pages/match-result.js';
+import { renderLeaderboard } from './pages/leaderboard.js';
 import { showUsernamePrompt } from './pages/username.js';
 
 // Initialize theme
@@ -54,6 +55,7 @@ router.addRoute('/history', (params, state) => renderHistory(app, router));
 router.addRoute('/lobby', (params, state) => renderLobby(app, router));
 router.addRoute('/battle', (params, state) => renderBattle(app, router));
 router.addRoute('/match-result', (params, state) => renderMatchResult(app, router));
+router.addRoute('/leaderboard', (params, state) => renderLeaderboard(app, router));
 
 // ── Username check on first visit ──
 async function boot() {

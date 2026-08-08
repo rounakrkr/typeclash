@@ -25,6 +25,10 @@ export function renderNavbar() {
       </a>
     </div>
     <div class="nav-controls flex-center gap-md">
+      <a href="#/leaderboard" class="nav-link" id="nav-leaderboard" title="View global & college rankings">
+        <span>🏆</span>
+        <span class="nav-link-text">Rankings</span>
+      </a>
       <a href="#/history" class="nav-link" id="nav-history" title="View your stats & history">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 8v4l3 3"/>

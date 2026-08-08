@@ -74,20 +74,15 @@ export function renderHome(appEl, router) {
     </div>
 
     <div class="feature-cards">
-      <div class="feature-card card-glass">
-        <div class="feature-icon">⚔️</div>
-        <h3>Real-time Battles</h3>
-        <p>Coming Soon</p>
-      </div>
-      <div class="feature-card card-glass">
+      <div class="feature-card card-glass" id="rankings-card" style="cursor:pointer;">
         <div class="feature-icon">🏆</div>
         <h3>Global Rankings</h3>
-        <p>Coming Soon</p>
+        <p>College & World Top</p>
       </div>
       <div class="feature-card card-glass" id="challenge-card" style="cursor:pointer;">
-        <div class="feature-icon">🔗</div>
-        <h3>Challenge Friends</h3>
-        <p>1v1 Battle</p>
+        <div class="feature-icon">⚔️</div>
+        <h3>Battle Arena</h3>
+        <p>4-Player Lobby</p>
       </div>
     </div>
 
@@ -140,10 +135,21 @@ export function renderHome(appEl, router) {
 
   container.querySelector('#start-btn').addEventListener('click', start);
 
-  // Battle mode — via Challenge Friends card
-  container.querySelector('#challenge-card').addEventListener('click', () => {
-    router.navigate('/lobby');
-  });
+  // Rankings card
+  const rankingsCard = container.querySelector('#rankings-card');
+  if (rankingsCard) {
+    rankingsCard.addEventListener('click', () => {
+      router.navigate('/leaderboard');
+    });
+  }
+
+  // Battle mode — via Battle Arena card
+  const challengeCard = container.querySelector('#challenge-card');
+  if (challengeCard) {
+    challengeCard.addEventListener('click', () => {
+      router.navigate('/lobby');
+    });
+  }
 
   // Enter key to start
   const handleKeydown = (e) => {

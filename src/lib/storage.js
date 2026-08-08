@@ -88,5 +88,35 @@ export const storage = {
 
   setUsername(username) {
     this.set('tc_username', username);
+  },
+
+  getCollege() {
+    return this.get('tc_college', 'General');
+  },
+
+  setCollege(college) {
+    this.set('tc_college', college || 'General');
+  },
+
+  // Challenge links (async 1v1)
+  saveChallenge({ text, wpm, accuracy, duration, username }) {
+    const challenges = this.get('tc_challenges', {});
+    const id = 'ch_' + Math.random().toString(36).substring(2, 9);
+    challenges[id] = {
+      id,
+      text,
+      creatorWpm: wpm,
+      creatorAcc: accuracy,
+      duration,
+      creatorName: username || 'A Friend',
+      createdAt: Date.now()
+    };
+    this.set('tc_challenges', challenges);
+    return id;
+  },
+
+  getChallenge(id) {
+    const challenges = this.get('tc_challenges', {});
+    return challenges[id] || null;
   }
 };

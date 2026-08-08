@@ -71,6 +71,24 @@ export function renderResults(appEl, router) {
   const container = document.createElement('div');
   container.className = 'results-container fade-in-up';
 
+  // Challenge Banner (if user completed a friend's challenge)
+  const challengeData = state.challengeData;
+  if (challengeData) {
+    const creatorWpm = Math.round(challengeData.creatorWpm || 0);
+    const myWpm = Math.round(wpm);
+    const won = myWpm >= creatorWpm;
+
+    const challengeBanner = document.createElement('div');
+    challengeBanner.className = `challenge-comparison-banner ${won ? 'won' : 'lost'}`;
+    challengeBanner.innerHTML = `
+      <div class="challenge-result-badge">${won ? '🎉 VICTORY!' : '💔 DEFEAT!'}</div>
+      <p class="challenge-result-text">
+        You typed <strong>${myWpm} WPM</strong> vs <strong>${escapeHtml(challengeData.creatorName)}'s ${creatorWpm} WPM</strong>
+      </p>
+    `;
+    container.appendChild(challengeBanner);
+  }
+
   // WPM Display (hero)
   const resultsHeader = document.createElement('div');
   resultsHeader.className = 'results-header';
@@ -123,7 +141,8 @@ export function renderResults(appEl, router) {
   actions.innerHTML = `
     <button class="btn btn-primary" id="btn-next">Next Test</button>
     <button class="btn btn-secondary" id="btn-retry">Retry</button>
-    <button class="btn btn-secondary" id="btn-share">📤 Share Result</button>
+    <button class="btn btn-secondary" id="btn-challenge">🔗 Challenge Friend</button>
+    <button class="btn btn-secondary" id="btn-share">📤 Share Card</button>
     <button class="btn btn-ghost" id="btn-history">📊 History</button>
     <button class="btn btn-ghost" id="btn-home">Home</button>
   `;
@@ -148,9 +167,17 @@ export function renderResults(appEl, router) {
     router.navigate('/play', { duration, category, punctuation, voiceMode, textId });
   });
 
-  document.getElementById('btn-home').addEventListener('click', () => {
-    cleanup();
-    router.navigate('/');
+  // Challenge Friend button handler
+  document.getElementById('btn-challenge').addEventListener('click', () => {
+    const username = storage.getUsername() || 'Friend';
+    const challengeId = storage.saveChallenge({ text, wpm, accuracy, duration, username });
+    const url = `${window.location.origin}${window.location.pathname}#/play?challenge=${challengeId}`;
+
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('btn-challenge');
+      btn.textContent = '✅ Link Copied!';
+      setTimeout(() => { btn.textContent = '🔗 Challenge Friend'; }, 2500);
+    });
   });
 
   document.getElementById('btn-history').addEventListener('click', () => {

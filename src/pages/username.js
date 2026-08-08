@@ -33,6 +33,19 @@ export function showUsernamePrompt(io) {
           <span class="username-counter" id="username-counter">0/16</span>
         </div>
 
+        <div class="username-input-wrap" style="margin-top: 0.5rem;">
+          <input
+            type="text"
+            id="college-input"
+            class="username-input"
+            style="font-size: 0.95rem; padding-right: 1rem;"
+            placeholder="College / Univ (e.g. KIIT, VIT, IIT)"
+            maxlength="24"
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </div>
+
         <p class="username-rules">3–16 characters · letters, numbers, underscores only</p>
         <p class="username-error" id="username-error" style="display:none;"></p>
 
@@ -73,6 +86,7 @@ export function showUsernamePrompt(io) {
 
     submitBtn.addEventListener('click', () => {
       const username = input.value.trim();
+      const college = overlay.querySelector('#college-input').value.trim() || 'General';
       if (!validate(username)) return;
 
       submitBtn.disabled = true;
@@ -80,11 +94,12 @@ export function showUsernamePrompt(io) {
       errorEl.style.display = 'none';
 
       // Ask server if username is available
-      io.emit('username:check', { username });
+      io.emit('username:check', { username, college });
     });
 
-    function onUsernameOk({ username }) {
+    function onUsernameOk({ username, college }) {
       storage.setUsername(username);
+      if (college) storage.setCollege(college);
       io.off('username:ok', onUsernameOk);
       io.off('username:taken', onUsernameTaken);
 
