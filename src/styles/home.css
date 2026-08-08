@@ -181,7 +181,7 @@
 
 /* ── Stats Counter ── */
 .stats-counter {
-  margin-top: 3rem;
+  margin-top: 1.25rem;
   color: var(--text-secondary);
   font-size: 0.85rem;
   font-family: 'JetBrains Mono', monospace;
