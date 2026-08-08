@@ -128,11 +128,15 @@ export class GameRoom {
     this.state = 'COUNTDOWN';
     let count = 3;
 
-    this.countdownTimer = setInterval(() => {
-      io.to(this.roomCode).emit('game:countdown', { count });
-      count--;
+    // Immediately emit count = 3
+    io.to(this.roomCode).emit('game:countdown', { count });
+    count--;
 
-      if (count < 0) {
+    this.countdownTimer = setInterval(() => {
+      if (count >= 0) {
+        io.to(this.roomCode).emit('game:countdown', { count });
+        count--;
+      } else {
         clearInterval(this.countdownTimer);
         this.countdownTimer = null;
         this.startGame(io);
