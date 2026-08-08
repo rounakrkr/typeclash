@@ -1,3 +1,5 @@
+import { normalizeCollege } from './utils.js';
+
 export const storage = {
   get(key, defaultValue = null) {
     try {
@@ -91,11 +93,12 @@ export const storage = {
   },
 
   getCollege() {
-    return localStorage.getItem('tc_college') || '';
+    return localStorage.getItem('tc_college') || 'General';
   },
 
   setCollege(college) {
-    localStorage.setItem('tc_college', college);
+    const norm = normalizeCollege(college);
+    localStorage.setItem('tc_college', norm);
   },
 
   // --- Elo Rating ---

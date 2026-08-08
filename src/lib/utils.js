@@ -64,3 +64,28 @@ export function createElement(tag, className, attrs = {}) {
 export function formatNumber(num) {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
+
+export function normalizeCollege(rawCollege) {
+  if (!rawCollege || !rawCollege.trim()) return 'General';
+  const clean = rawCollege.trim().replace(/\s+/g, ' ');
+  const lower = clean.toLowerCase();
+
+  // Common university alias mappings
+  if (/^kiit|kalinga/i.test(lower)) return 'KIIT University';
+  if (/^iit\s*b(ombay)?$/i.test(lower)) return 'IIT Bombay';
+  if (/^iit\s*d(elhi)?$/i.test(lower)) return 'IIT Delhi';
+  if (/^iit\s*k(anpur)?$/i.test(lower)) return 'IIT Kanpur';
+  if (/^iit\s*m(adras)?$/i.test(lower)) return 'IIT Madras';
+  if (/^iit\s*k(haragpur)?$/i.test(lower)) return 'IIT Kharagpur';
+  if (/^bits|pilani/i.test(lower)) return 'BITS Pilani';
+  if (/^vit|vellore/i.test(lower)) return 'VIT Vellore';
+  if (/^srm/i.test(lower)) return 'SRM University';
+  if (/^dtu|delhi tech/i.test(lower)) return 'DTU Delhi';
+  if (/^nsut|netaji/i.test(lower)) return 'NSUT Delhi';
+
+  // Capitalize nicely
+  return clean
+    .split(' ')
+    .map(word => word.length <= 3 ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}

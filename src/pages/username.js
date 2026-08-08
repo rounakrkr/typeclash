@@ -1,4 +1,5 @@
 import { storage } from '../lib/storage.js';
+import { normalizeCollege } from '../lib/utils.js';
 
 /**
  * Show a fullscreen username prompt on first visit.
@@ -17,8 +18,8 @@ export function showUsernamePrompt(io) {
         <div class="username-logo">
           <span class="logo-type">type</span><span class="logo-clash">clash</span>
         </div>
-        <h2 class="username-title">Complete your profile</h2>
-        <p class="username-subtitle">Choose a username and represent your college!</p>
+        <h2 class="username-title">Welcome to TypeClash</h2>
+        <p class="username-subtitle">Choose a username and optionally add your college!</p>
 
         <div class="username-input-wrap">
           <input
@@ -39,7 +40,7 @@ export function showUsernamePrompt(io) {
             id="college-input"
             class="username-input"
             style="font-size: 0.95rem;"
-            placeholder="College Name (e.g. KIIT, VIT)"
+            placeholder="College / Univ (Optional)"
             maxlength="32"
             autocomplete="off"
             spellcheck="false"
@@ -115,7 +116,8 @@ export function showUsernamePrompt(io) {
 
     submitBtn.addEventListener('click', () => {
       const username = input.value.trim();
-      const college = overlay.querySelector('#college-input').value.trim() || 'General';
+      const rawCollege = overlay.querySelector('#college-input').value.trim();
+      const college = normalizeCollege(rawCollege);
       if (!validate(username)) return;
 
       submitBtn.disabled = true;

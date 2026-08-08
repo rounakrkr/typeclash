@@ -63,8 +63,8 @@ router.addRoute('/leaderboard', (params, state) => renderLeaderboard(app, router
 async function boot() {
   const io = socket.get();
 
-  // If no username or college stored, show prompt before starting router
-  if (!storage.getUsername() || !storage.getCollege()) {
+  // If no username stored, show prompt before starting router
+  if (!storage.getUsername()) {
     if (!io.connected) {
       await Promise.race([
         new Promise(resolve => io.once('connect', resolve)),
