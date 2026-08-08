@@ -196,6 +196,9 @@ export function renderBattle(appEl, router) {
     }
   });
 
+  // Initialize typing engine (render text spans & attach listeners)
+  engine.init();
+
   // ── Countdown Handler ──
   function onCountdown({ count }) {
     sounds.playCountdown();

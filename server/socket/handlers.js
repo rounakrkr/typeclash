@@ -157,7 +157,9 @@ export function registerSocketHandlers(io) {
         players: room.getPlayersInfo()
       });
 
-      room.startCountdown(io);
+      setTimeout(() => {
+        room.startCountdown(io);
+      }, 600);
       console.log(`Room ${roomCode} started by host ${socket.id}`);
     });
 
@@ -273,7 +275,9 @@ export function registerSocketHandlers(io) {
             players: newRoom.getPlayersInfo()
           });
           rematchPending.delete(oldRoomCode);
-          newRoom.startCountdown(io);
+          setTimeout(() => {
+            newRoom.startCountdown(io);
+          }, 600);
           console.log(`Rematch started: ${oldRoomCode} → ${pending.newRoomCode}`);
         } else {
           socket.emit('rematch:waiting', { newRoomCode: pending.newRoomCode });
@@ -320,7 +324,9 @@ export function registerSocketHandlers(io) {
           players: room.getPlayersInfo(),
           isRanked: true
         });
-        room.startCountdown(io);
+        setTimeout(() => {
+          room.startCountdown(io);
+        }, 600);
       } else {
         // Nobody in queue, join the queue
         matchmakingQueue.push({ socketId: socket.id, username, elo, socket });
