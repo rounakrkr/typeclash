@@ -96,7 +96,7 @@ export function renderLeaderboard(appEl, router) {
       thead.innerHTML = `
         <th style="width: 70px;">Rank</th>
         <th>College Name</th>
-        <th>City / Branch</th>
+        <th>City</th>
         <th>Avg WPM</th>
         <th>Total Rating</th>
       `;

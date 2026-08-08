@@ -1,4 +1,7 @@
 import { sounds } from '../lib/sounds.js';
+import { storage } from '../lib/storage.js';
+import { showUsernamePrompt } from '../pages/username.js';
+import { socket } from '../lib/socket.js';
 
 /**
  * Render the fixed top navigation bar.
@@ -9,6 +12,7 @@ export function renderNavbar() {
   nav.className = 'navbar';
 
   const isHome = !window.location.hash || window.location.hash === '#/' || window.location.hash === '#';
+  const username = storage.getUsername();
 
   nav.innerHTML = `
     <div class="nav-left flex-center gap-md">
@@ -36,6 +40,10 @@ export function renderNavbar() {
         </svg>
         <span class="nav-link-text">History</span>
       </a>
+      <button class="nav-link profile-badge-btn" id="profile-btn" title="Edit Profile & College">
+        <span>👤</span>
+        <span class="nav-link-text">${username ? escapeHtml(username) : 'Profile'}</span>
+      </button>
       <button class="btn-icon settings-toggle" id="sound-toggle" aria-label="Toggle sound" title="Toggle keystroke sounds">
         ${sounds.isEnabled() ? '🔊' : '🔇'}
       </button>
@@ -50,6 +58,14 @@ export function renderNavbar() {
     });
   }
 
+  // Profile button handler — open username & college modal
+  const profileBtn = nav.querySelector('#profile-btn');
+  if (profileBtn) {
+    profileBtn.addEventListener('click', () => {
+      showUsernamePrompt(socket.get());
+    });
+  }
+
   // Sound toggle handler
   const soundToggle = nav.querySelector('#sound-toggle');
   soundToggle.addEventListener('click', () => {
@@ -59,4 +75,8 @@ export function renderNavbar() {
   });
 
   return nav;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

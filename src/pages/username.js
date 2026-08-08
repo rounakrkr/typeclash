@@ -62,7 +62,23 @@ export function showUsernamePrompt(io) {
     const errorEl = overlay.querySelector('#username-error');
     const counter = overlay.querySelector('#username-counter');
 
-    input.focus();
+    // Pre-fill existing data if available
+    const existingUser = storage.getUsername() || '';
+    const existingCollege = storage.getCollege() || '';
+    if (existingUser) {
+      input.value = existingUser;
+      counter.textContent = `${existingUser.length}/16`;
+      submitBtn.disabled = !/^[a-zA-Z0-9_]{3,16}$/.test(existingUser);
+    }
+    if (existingCollege) {
+      collegeInput.value = existingCollege;
+    }
+
+    if (existingUser && !existingCollege) {
+      collegeInput.focus();
+    } else {
+      input.focus();
+    }
 
     const validate = (val) => /^[a-zA-Z0-9_]{3,16}$/.test(val);
 
