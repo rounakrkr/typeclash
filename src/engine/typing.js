@@ -13,6 +13,7 @@ export class TypingEngine {
     this.state = 'idle'; // 'idle', 'active', 'completed'
     
     this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.handleResize = this.handleResize.bind(this);
   }
 
   init() {
@@ -20,18 +21,51 @@ export class TypingEngine {
     const wordsContainer = document.createElement('div');
     wordsContainer.className = 'text-words';
     
-    for (let i = 0; i < this.text.length; i++) {
-      const span = document.createElement('span');
-      span.textContent = this.text[i];
-      span.className = 'char char-pending';
-      if (i === 0) span.classList.add('char-current');
-      wordsContainer.appendChild(span);
-    }
+    const words = this.text.split(' ');
+    this.spans = [];
+
+    words.forEach((wordText, wIdx) => {
+      const wordDiv = document.createElement('div');
+      wordDiv.className = 'word';
+
+      for (let i = 0; i < wordText.length; i++) {
+        const span = document.createElement('span');
+        span.textContent = wordText[i];
+        span.className = 'char char-pending';
+        wordDiv.appendChild(span);
+        this.spans.push(span);
+      }
+
+      if (wIdx < words.length - 1) {
+        const spaceSpan = document.createElement('span');
+        spaceSpan.textContent = ' ';
+        spaceSpan.className = 'char char-pending char-space';
+        wordDiv.appendChild(spaceSpan);
+        this.spans.push(spaceSpan);
+      }
+
+      wordsContainer.appendChild(wordDiv);
+    });
     
     this.containerEl.appendChild(wordsContainer);
-    this.spans = Array.from(wordsContainer.children);
+
+    // Smooth floating caret element
+    this.caretEl = document.createElement('div');
+    this.caretEl.id = 'caret';
+    this.caretEl.className = 'typing-caret';
+    this.containerEl.appendChild(this.caretEl);
+
+    if (this.spans.length > 0) {
+      this.spans[0].classList.add('char-current');
+      requestAnimationFrame(() => this.updateCaret(true));
+    }
     
     document.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('resize', this.handleResize);
+  }
+
+  handleResize() {
+    this.updateCaret(true);
   }
 
   start() {
@@ -55,19 +89,54 @@ export class TypingEngine {
       span.className = 'char char-pending';
       if (index === 0) span.classList.add('char-current');
     });
+    this.containerEl.scrollTop = 0;
+    this.updateCaret(true);
   }
 
   destroy() {
     document.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('resize', this.handleResize);
     this.containerEl.innerHTML = '';
+  }
+
+  updateCaret(instant = false) {
+    if (!this.caretEl) return;
+    const currentSpan = this.spans[this.position];
+    if (!currentSpan) {
+      this.caretEl.style.display = 'none';
+      return;
+    }
+    this.caretEl.style.display = 'block';
+
+    const containerRect = this.containerEl.getBoundingClientRect();
+    const spanRect = currentSpan.getBoundingClientRect();
+
+    const x = spanRect.left - containerRect.left;
+    const y = spanRect.top - containerRect.top + this.containerEl.scrollTop;
+
+    if (instant) {
+      this.caretEl.style.transition = 'none';
+      this.caretEl.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      requestAnimationFrame(() => {
+        if (this.caretEl) {
+          this.caretEl.style.transition = 'transform 0.06s cubic-bezier(0, 0.9, 0.1, 1)';
+        }
+      });
+    } else {
+      this.caretEl.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    }
   }
 
   handleKeyDown(e) {
     if (this.state !== 'active') return;
     
-    // Ignore modifier keys and function keys
     if (e.key.length !== 1 && e.key !== 'Backspace') return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    // Prevent default scrolling on spacebar
+    if (e.key === ' ') {
+      e.preventDefault();
+    }
     
     if (this.position === 0 && !this.startTime && e.key !== 'Backspace') {
       this.startTime = performance.now();
@@ -87,6 +156,8 @@ export class TypingEngine {
         }
         
         prevSpan.className = 'char char-pending char-current';
+        this.updateCaret();
+        this.autoScroll();
       }
       return;
     }
@@ -126,8 +197,10 @@ export class TypingEngine {
     
     if (this.position < this.text.length) {
       this.spans[this.position].classList.add('char-current');
+      this.updateCaret();
       this.autoScroll();
     } else {
+      this.updateCaret();
       this.complete();
     }
   }
@@ -140,8 +213,9 @@ export class TypingEngine {
     const spanTop = currentSpan.offsetTop;
     const scrollTop = this.containerEl.scrollTop;
     
-    if (spanTop - scrollTop > containerHeight * 0.6) {
-      this.containerEl.scrollBy({ top: 30, behavior: 'smooth' });
+    if (spanTop - scrollTop > containerHeight * 0.55) {
+      this.containerEl.scrollTop = spanTop - (containerHeight * 0.35);
+      this.updateCaret(true);
     }
   }
 
