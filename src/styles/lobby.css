@@ -140,14 +140,21 @@
 }
 
 .lobby-card .btn-primary {
-  width: auto;
-  padding: 0.65rem 1.75rem;
-  border-radius: var(--radius-full);
-  font-size: 0.95rem;
-  font-weight: 600;
+  min-width: 170px;
+  padding: 0.85rem 2rem;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.35);
+  transition: var(--transition-fast);
+}
+.lobby-card .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.5);
 }
 
 /* ── Waiting State ── */
