@@ -197,6 +197,9 @@ export function renderHome(appEl, router) {
 
   // Enter key to start
   const handleKeydown = (e) => {
+    if (document.querySelector('#username-overlay') || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
       start();
     }

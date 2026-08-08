@@ -123,6 +123,8 @@ export function showUsernamePrompt(io) {
 
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
         if (!collegeInput.value.trim()) {
           collegeInput.focus();
         } else if (!submitBtn.disabled) {
@@ -132,8 +134,12 @@ export function showUsernamePrompt(io) {
     });
 
     collegeInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !submitBtn.disabled) {
-        submitBtn.click();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!submitBtn.disabled) {
+          submitBtn.click();
+        }
       }
     });
 
