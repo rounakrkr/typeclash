@@ -7,14 +7,14 @@ import { socket } from '../lib/socket.js';
 import { formatTime } from '../lib/utils.js';
 
 /**
- * Render the multiplayer battle page.
- * Similar to game.js but with opponent tracking, countdown, and socket sync.
+ * Render the multiplayer battle page (up to 4 players).
  */
 export function renderBattle(appEl, router) {
   const state = router.getState() || {};
   const text = state.text || '';
   const duration = state.duration ?? 30;
   const roomCode = state.roomCode || '';
+  const initialPlayers = state.players || [];
 
   if (!text) {
     router.navigate('/lobby');
@@ -26,10 +26,8 @@ export function renderBattle(appEl, router) {
   const io = socket.get();
   const calculator = new StatsCalculator();
 
-  let timerStarted = false;
-  let playerDone = false;    // This player finished typing or time ran out
-  let navigatedAway = false; // Server sent game:over, navigating to results
-  let countdownActive = true;
+  let playerDone = false;
+  let navigatedAway = false;
 
   // ── Countdown Overlay ──
   const countdownOverlay = document.createElement('div');
@@ -43,32 +41,50 @@ export function renderBattle(appEl, router) {
   countdownOverlay.appendChild(countdownNumber);
   appEl.appendChild(countdownOverlay);
 
-  // ── Progress Bar ──
-  const progressBar = document.createElement('div');
-  progressBar.className = 'progress-bar';
-  appEl.appendChild(progressBar);
-
-  // ── Battle Container ──
+  // ── Main Battle Container ──
   const container = document.createElement('div');
   container.className = 'battle-container';
 
-  // ── Player Bars ──
-  const playersEl = document.createElement('div');
-  playersEl.className = 'battle-players';
-  playersEl.innerHTML = `
-    <div class="player-bar player-self">
-      <span class="player-name">You</span>
-      <span class="player-wpm" id="self-wpm">0 WPM</span>
-    </div>
-    <div class="player-bar player-opponent">
-      <span class="player-name">Opponent</span>
-      <span class="player-wpm" id="opponent-wpm">0 WPM</span>
-    </div>
-  `;
-  container.appendChild(playersEl);
+  // ── Multi-player Progress Header ──
+  const playersHeader = document.createElement('div');
+  playersHeader.className = 'battle-players-grid';
+  playersHeader.id = 'players-grid';
 
-  const selfWpmEl = playersEl.querySelector('#self-wpm');
-  const opponentWpmEl = playersEl.querySelector('#opponent-wpm');
+  container.appendChild(playersHeader);
+
+  // Build tracks map: socketId → { barFill, wpmEl, statusEl }
+  const playerTracks = new Map();
+
+  function renderPlayersGrid(playersList) {
+    playersHeader.innerHTML = '';
+    playerTracks.clear();
+
+    playersList.forEach(p => {
+      const isMe = p.socketId === socket.id;
+      const track = document.createElement('div');
+      track.className = `player-track ${isMe ? 'self-track' : 'opponent-track'}`;
+      track.dataset.sid = p.socketId;
+
+      track.innerHTML = `
+        <div class="track-info">
+          <span class="track-username">${escapeHtml(p.username)} ${isMe ? '<small>(You)</small>' : ''}</span>
+          <span class="track-wpm" id="wpm-${p.socketId}">0 WPM</span>
+        </div>
+        <div class="track-bar-wrap">
+          <div class="track-bar-fill" id="bar-${p.socketId}" style="width: 0%;"></div>
+        </div>
+      `;
+
+      playersHeader.appendChild(track);
+
+      playerTracks.set(p.socketId, {
+        bar: track.querySelector(`#bar-${p.socketId}`),
+        wpm: track.querySelector(`#wpm-${p.socketId}`)
+      });
+    });
+  }
+
+  renderPlayersGrid(initialPlayers);
 
   // ── Game Header: Live Stats | Timer ──
   const header = document.createElement('div');
@@ -87,13 +103,6 @@ export function renderBattle(appEl, router) {
   header.appendChild(timerEl);
   header.appendChild(spacer);
   container.appendChild(header);
-
-  // ── Opponent Progress Bar ──
-  const opponentProgressWrap = document.createElement('div');
-  opponentProgressWrap.className = 'opponent-progress';
-  opponentProgressWrap.innerHTML = `<div class="opponent-progress-fill" id="opponent-progress"></div>`;
-  container.appendChild(opponentProgressWrap);
-  const opponentProgressFill = opponentProgressWrap.querySelector('#opponent-progress');
 
   // ── Text Display ──
   const textDisplayEl = document.createElement('div');
@@ -127,46 +136,48 @@ export function renderBattle(appEl, router) {
       const acc = calculator.getAccuracy();
       liveStats.updateWPM(wpm);
       liveStats.updateAccuracy(acc);
-      selfWpmEl.textContent = `${wpm} WPM`;
 
-      const progress = engine.getProgress();
-      progressBar.style.width = progress.percentage + '%';
+      // Update self track
+      const myTrack = playerTracks.get(socket.id);
+      if (myTrack) {
+        myTrack.wpm.textContent = `${wpm} WPM`;
+        myTrack.bar.style.width = engine.getProgress().percentage + '%';
+      }
     },
-    onComplete() {
-      // In multiplayer, server timer controls game end — text is pre-loaded for full duration
-    }
+    onComplete() {}
   });
 
   // ── Create Typing Engine ──
   const engine = new TypingEngine(textDisplayEl, text, {
-    onStart() {
-      // Timer is started by server signal, not first keystroke in battle mode
-    },
+    onStart() {},
     onKeystroke({ char, position, correct, timestamp }) {
       if (playerDone) return;
 
       calculator.addKeystroke(correct, timestamp);
-
       if (correct) {
         sounds.playKeystroke();
       } else {
         sounds.playError();
       }
 
-      // Update live stats
       const elapsed = timer.getElapsed();
       if (elapsed > 0) {
         const wpm = calculator.getWPM(elapsed);
         const acc = calculator.getAccuracy();
         liveStats.updateWPM(wpm);
         liveStats.updateAccuracy(acc);
-        selfWpmEl.textContent = `${wpm} WPM`;
       }
 
       const progress = engine.getProgress();
-      progressBar.style.width = progress.percentage + '%';
 
-      // Emit progress to opponent
+      // Update self track
+      const myTrack = playerTracks.get(socket.id);
+      if (myTrack) {
+        myTrack.bar.style.width = progress.percentage + '%';
+        myTrack.wpm.textContent = `${calculator.getWPM(timer.getElapsed())} WPM`;
+      }
+
+      // Emit progress to server for broadcast to opponents
       io.emit('player:keystroke', {
         position,
         wpm: calculator.getWPM(timer.getElapsed()),
@@ -175,45 +186,58 @@ export function renderBattle(appEl, router) {
       });
     },
     onComplete() {
-      // Player typed all text — send stats to server, stop input
-      // Timer keeps running until server ends game for both players
       if (!playerDone) {
         finishGame();
       }
     }
   });
 
-  // Initialize engine but don't start until countdown finishes
-  engine.init();
-
-  // ── Socket: Countdown & Game Start ──
+  // ── Countdown Handler ──
   function onCountdown({ count }) {
-    countdownNumber.textContent = count === 0 ? 'GO!' : count;
-    // Re-trigger animation by forcing reflow
-    countdownNumber.style.animation = 'none';
-    countdownNumber.offsetHeight; // force reflow
-    countdownNumber.style.animation = '';
+    sounds.playCountdown();
+    if (count > 0) {
+      countdownNumber.textContent = count;
+      countdownNumber.classList.remove('bounce');
+      void countdownNumber.offsetWidth;
+      countdownNumber.classList.add('bounce');
+    } else {
+      countdownNumber.textContent = 'GO!';
+      countdownNumber.classList.remove('bounce');
+      void countdownNumber.offsetWidth;
+      countdownNumber.classList.add('bounce');
+    }
   }
 
+  // ── Start Handler ──
   function onGameStart() {
-    countdownActive = false;
-    // Hide overlay
     countdownOverlay.classList.add('hidden');
     setTimeout(() => { countdownOverlay.style.display = 'none'; }, 300);
 
-    // Start engine and timer
     engine.start();
     timer.start();
-    timerStarted = true;
     textDisplayEl.classList.add('typing');
   }
 
-  function onOpponentProgress({ wpm, accuracy, progress }) {
-    opponentWpmEl.textContent = `${wpm || 0} WPM`;
-    opponentProgressFill.style.width = (progress || 0) + '%';
+  // ── Opponent Progress Handler ──
+  function onOpponentProgress({ socketId, wpm, progress }) {
+    const track = playerTracks.get(socketId);
+    if (track) {
+      track.wpm.textContent = `${wpm || 0} WPM`;
+      track.bar.style.width = (progress || 0) + '%';
+    }
   }
 
-  function onGameOver({ player: playerResults, opponent: opponentResults, winner }) {
+  // ── Opponent Finished Handler ──
+  function onOpponentFinished({ socketId, wpm }) {
+    const track = playerTracks.get(socketId);
+    if (track) {
+      track.wpm.textContent = `✅ ${wpm} WPM`;
+      track.bar.style.width = '100%';
+    }
+  }
+
+  // ── Game Over Handler ──
+  function onGameOver({ allResults, myPlayerId, reason }) {
     if (!navigatedAway) {
       navigatedAway = true;
       playerDone = true;
@@ -224,48 +248,27 @@ export function renderBattle(appEl, router) {
       cleanup();
       router.navigate('/match-result', {
         _fresh: true,
-        player: playerResults,
-        opponent: opponentResults,
-        winner,
+        allResults: allResults || [],
+        myPlayerId,
         roomCode,
-        duration
+        duration,
+        reason
       });
     }
   }
 
-  function onOpponentDisconnect() {
-    if (!navigatedAway) {
-      navigatedAway = true;
-      playerDone = true;
-      timer.stop();
-      engine.stop();
-
-      const elapsed = timer.getElapsed();
-      const playerResults = {
-        wpm: Math.round(calculator.getWPM(elapsed)),
-        rawWpm: Math.round(calculator.getRawWPM(elapsed)),
-        accuracy: parseFloat(calculator.getAccuracy().toFixed(1)),
-        consistency: parseFloat(calculator.getConsistency().toFixed(1))
-      };
-
-      cleanup();
-      router.navigate('/match-result', {
-        _fresh: true,
-        player: playerResults,
-        opponent: null,
-        roomCode,
-        duration
-      });
-    }
+  function onPlayerLeft({ players: updatedPlayers }) {
+    renderPlayersGrid(updatedPlayers);
   }
 
   io.on('game:countdown', onCountdown);
   io.on('game:start', onGameStart);
   io.on('opponent:progress', onOpponentProgress);
+  io.on('opponent:finished', onOpponentFinished);
+  io.on('room:player_left', onPlayerLeft);
   io.on('game:over', onGameOver);
-  io.on('opponent:disconnected', onOpponentDisconnect);
 
-  // ── Finish Game (player done — wait for server game:over) ──
+  // ── Finish Game ──
   function finishGame() {
     playerDone = true;
     engine.stop();
@@ -286,16 +289,13 @@ export function renderBattle(appEl, router) {
       charStats
     });
 
-    // Show waiting message — timer keeps running until server ends game
     timerEl.textContent = 'Done!';
     timerEl.classList.remove('pulse');
-    // Server will send 'game:over' when both done or time expires
   }
 
   // ── Keyboard Shortcuts ──
   const shortcutHandler = (e) => {
     if (e.key === 'Escape') {
-      // Forfeit — leave the room and go back to lobby
       io.emit('room:leave');
       cleanup();
       router.navigate('/lobby');
@@ -311,9 +311,14 @@ export function renderBattle(appEl, router) {
     io.off('game:countdown', onCountdown);
     io.off('game:start', onGameStart);
     io.off('opponent:progress', onOpponentProgress);
+    io.off('opponent:finished', onOpponentFinished);
+    io.off('room:player_left', onPlayerLeft);
     io.off('game:over', onGameOver);
-    io.off('opponent:disconnected', onOpponentDisconnect);
   }
 
   return cleanup;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

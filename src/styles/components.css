@@ -250,6 +250,371 @@
   margin-top: 0.25rem;
 }
 
+/* ══════════════════════════════════════════════
+   Username Onboarding Modal
+   ══════════════════════════════════════════════ */
+.username-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(8, 8, 14, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.username-overlay.visible {
+  opacity: 1;
+}
+.username-overlay.hiding {
+  opacity: 0;
+}
+
+.username-modal {
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(108, 92, 231, 0.2);
+}
+
+.username-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.75rem;
+  display: flex;
+  gap: 0;
+}
+
+.username-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.username-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.username-input-wrap {
+  width: 100%;
+  position: relative;
+}
+
+.username-input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  padding-right: 4.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+.username-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.username-counter {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  pointer-events: none;
+}
+
+.username-rules {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.username-error {
+  color: var(--incorrect);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.username-modal .btn-primary {
+  width: 100%;
+  padding: 0.85rem;
+  font-size: 1.05rem;
+}
+
+/* ══════════════════════════════════════════════
+   4-Player Lobby & Battle Upgrades
+   ══════════════════════════════════════════════ */
+.lobby-players-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.lobby-player-slot {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  transition: var(--transition-normal);
+}
+
+.lobby-player-slot.filled {
+  background: rgba(108, 92, 231, 0.08);
+  border: 1px solid rgba(108, 92, 231, 0.25);
+}
+
+.player-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.empty-avatar {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+.player-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.player-name-text {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.empty-text {
+  color: var(--text-secondary);
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+
+.host-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.15);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+  width: fit-content;
+}
+
+.ready-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.15);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+  width: fit-content;
+}
+
+.player-count-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-full);
+  background: rgba(108, 92, 231, 0.15);
+  color: var(--accent-primary);
+  border: 1px solid rgba(108, 92, 231, 0.3);
+}
+
+.host-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.btn-start-game {
+  width: 100%;
+  max-width: 320px;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+}
+
+.host-hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* ══════════════════════════════════════════════
+   Battle Multi-Player Tracks
+   ══════════════════════════════════════════════ */
+.battle-players-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.player-track {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+}
+
+.self-track {
+  background: rgba(108, 92, 231, 0.1);
+  border-color: rgba(108, 92, 231, 0.3);
+}
+
+.track-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.track-username {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.track-wpm {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+.track-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.track-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: var(--radius-full);
+  transition: width 0.2s ease-out;
+}
+
+/* ══════════════════════════════════════════════
+   Leaderboard Standings on Match Result
+   ══════════════════════════════════════════════ */
+.match-leaderboard {
+  width: 100%;
+  max-width: 540px;
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+}
+
+.leaderboard-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 1.25rem;
+  color: var(--text-primary);
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+}
+
+.leaderboard-item.is-me {
+  background: rgba(108, 92, 231, 0.12);
+  border-color: rgba(108, 92, 231, 0.35);
+}
+
+.leaderboard-item.rank-1 {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(255, 165, 0, 0.05));
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.rank-badge {
+  font-size: 1.3rem;
+  min-width: 2rem;
+  text-align: center;
+}
+
+.leaderboard-item .player-info {
+  flex: 1;
+}
+
+.leaderboard-item .player-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.leaderboard-item .player-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.leaderboard-item .wpm-stat {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent-primary);
+}
+
+.leaderboard-item .acc-stat {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .lobby-players-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 .live-stats {
   display: flex;
   align-items: center;

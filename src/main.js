@@ -18,6 +18,8 @@ import { Router } from './lib/router.js';
 import { theme } from './lib/theme.js';
 import { sounds } from './lib/sounds.js';
 import { tts } from './lib/tts.js';
+import { storage } from './lib/storage.js';
+import { socket } from './lib/socket.js';
 
 // Page renderers
 import { renderHome } from './pages/home.js';
@@ -27,6 +29,7 @@ import { renderHistory } from './pages/history.js';
 import { renderLobby } from './pages/lobby.js';
 import { renderBattle } from './pages/battle.js';
 import { renderMatchResult } from './pages/match-result.js';
+import { showUsernamePrompt } from './pages/username.js';
 
 // Initialize theme
 theme.init();
@@ -52,5 +55,29 @@ router.addRoute('/lobby', (params, state) => renderLobby(app, router));
 router.addRoute('/battle', (params, state) => renderBattle(app, router));
 router.addRoute('/match-result', (params, state) => renderMatchResult(app, router));
 
-// Start routing
-router.init();
+// ── Username check on first visit ──
+async function boot() {
+  const io = socket.get();
+
+  // If no username stored, show prompt before starting router
+  if (!storage.getUsername()) {
+    // Wait for socket to connect first
+    if (!io.connected) {
+      await new Promise(resolve => io.once('connect', resolve));
+    }
+    await showUsernamePrompt(io);
+  } else {
+    // Re-register username with server on reconnect
+    io.on('connect', () => {
+      io.emit('username:register', { username: storage.getUsername() });
+    });
+    if (io.connected) {
+      io.emit('username:register', { username: storage.getUsername() });
+    }
+  }
+
+  // Start routing
+  router.init();
+}
+
+boot();

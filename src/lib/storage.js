@@ -80,5 +80,13 @@ export const storage = {
     }
     
     return { isNewBest, previousBest };
+  },
+
+  getUsername() {
+    return this.get('tc_username', null);
+  },
+
+  setUsername(username) {
+    this.set('tc_username', username);
   }
 };

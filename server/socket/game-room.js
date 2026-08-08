@@ -1,15 +1,17 @@
 /**
- * GameRoom — manages the lifecycle of a single multiplayer typing match.
+ * GameRoom — manages the lifecycle of a multiplayer typing match.
  *
  * States: WAITING → COUNTDOWN → PLAYING → FINISHED
- * Capacity: 2 players (player1, player2)
+ * Capacity: up to 4 players
+ * Start: host must explicitly emit room:start (min 2 players)
  */
 export class GameRoom {
   constructor(roomCode, options = {}) {
     this.roomCode = roomCode;
     this.state = 'WAITING'; // WAITING | COUNTDOWN | PLAYING | FINISHED
-    this.players = new Map(); // socketId → { id, progress, finished, results }
-    this.text = null;         // Set when the room starts
+    this.players = new Map(); // socketId → { id, username, progress, finished, results }
+    this.hostSocketId = null;  // first player who creates the room
+    this.text = null;
     this.duration = options.duration || 30;
     this.category = options.category || 'all';
     this.punctuation = options.punctuation || false;
@@ -24,21 +26,31 @@ export class GameRoom {
   /**
    * Add a player to the room.
    * @param {string} socketId
-   * @returns {{ id: string, socketId: string } | null} Player info, or null if room is full.
+   * @param {string} username
+   * @returns {{ id: string, socketId: string, isHost: boolean } | null}
    */
-  addPlayer(socketId) {
+  addPlayer(socketId, username = 'Player') {
     if (this.isFull()) return null;
 
-    const playerId = this.players.size === 0 ? 'player1' : 'player2';
+    const playerNumber = this.players.size + 1;
+    const playerId = `player${playerNumber}`;
+    const isHost = this.players.size === 0;
+
     const playerInfo = {
       id: playerId,
-      progress: { position: 0, wpm: 0, accuracy: 100 },
+      username,
+      progress: { position: 0, wpm: 0, accuracy: 100, progressPct: 0 },
       finished: false,
       results: null
     };
 
     this.players.set(socketId, playerInfo);
-    return { id: playerId, socketId };
+
+    if (isHost) {
+      this.hostSocketId = socketId;
+    }
+
+    return { id: playerId, socketId, isHost, username };
   }
 
   /**
@@ -48,12 +60,19 @@ export class GameRoom {
    */
   removePlayer(socketId) {
     this.players.delete(socketId);
+
+    // If host left, transfer host to next player
+    if (socketId === this.hostSocketId) {
+      const next = this.players.keys().next().value;
+      this.hostSocketId = next || null;
+    }
+
     return this.players.size;
   }
 
   /** @returns {boolean} */
   isFull() {
-    return this.players.size >= 2;
+    return this.players.size >= 4;
   }
 
   /** @returns {boolean} */
@@ -61,16 +80,39 @@ export class GameRoom {
     return this.players.size === 0;
   }
 
+  /** @returns {boolean} */
+  isHost(socketId) {
+    return socketId === this.hostSocketId;
+  }
+
   /**
-   * Get the opponent's socket ID.
+   * Get all other player socket IDs (opponents).
+   * @param {string} socketId
+   * @returns {string[]}
+   */
+  getOpponents(socketId) {
+    return [...this.players.keys()].filter(id => id !== socketId);
+  }
+
+  /**
+   * Get opponent socket ID (backwards compat for 2-player use).
    * @param {string} socketId
    * @returns {string | null}
    */
   getOpponent(socketId) {
-    for (const [id] of this.players) {
-      if (id !== socketId) return id;
-    }
-    return null;
+    return this.getOpponents(socketId)[0] || null;
+  }
+
+  /**
+   * Serialize all players for broadcast.
+   */
+  getPlayersInfo() {
+    return [...this.players.entries()].map(([sid, p]) => ({
+      socketId: sid,
+      playerId: p.id,
+      username: p.username,
+      isHost: sid === this.hostSocketId
+    }));
   }
 
   // ── Game flow ──────────────────────────────────────────────────────
@@ -123,16 +165,15 @@ export class GameRoom {
     this.state = 'FINISHED';
     this.gameTimer = null;
 
-    const results = this.getResults();
+    const allResults = this.getAllResults();
     // Send personalized results to each player
     for (const [sid, player] of this.players) {
-      const oppSid = this.getOpponent(sid);
-      const oppPlayer = oppSid ? this.players.get(oppSid) : null;
+      const myEntry = allResults.find(r => r.socketId === sid);
       io.to(sid).emit('game:over', {
         reason: 'time',
-        player: player.results || player.progress,
-        opponent: oppPlayer ? (oppPlayer.results || oppPlayer.progress) : null,
-        winner: results.winner === player.id ? 'you' : (results.winner ? 'opponent' : 'draw')
+        myPlayerId: player.id,
+        allResults,
+        rank: myEntry ? myEntry.rank : allResults.length
       });
     }
   }
@@ -141,8 +182,6 @@ export class GameRoom {
 
   /**
    * Update a player's live progress.
-   * @param {string} socketId
-   * @param {{ position: number, wpm: number, accuracy: number }} data
    */
   updateProgress(socketId, data) {
     const player = this.players.get(socketId);
@@ -151,14 +190,13 @@ export class GameRoom {
     player.progress = {
       position: data.position ?? player.progress.position,
       wpm: data.wpm ?? player.progress.wpm,
-      accuracy: data.accuracy ?? player.progress.accuracy
+      accuracy: data.accuracy ?? player.progress.accuracy,
+      progressPct: data.progress ?? player.progress.progressPct
     };
   }
 
   /**
    * Mark a player as finished and record their results.
-   * @param {string} socketId
-   * @param {{ wpm: number, rawWpm: number, accuracy: number, consistency: number, charStats: object }} results
    */
   playerFinished(socketId, results) {
     const player = this.players.get(socketId);
@@ -172,70 +210,56 @@ export class GameRoom {
   }
 
   /**
-   * Check if the game is over (both finished or state already FINISHED).
-   * @returns {boolean}
+   * Check if ALL players have finished.
    */
   isGameOver() {
     if (this.state === 'FINISHED') return true;
-
-    let allFinished = true;
     for (const [, player] of this.players) {
-      if (!player.finished) {
-        allFinished = false;
-        break;
-      }
+      if (!player.finished) return false;
     }
-    return allFinished;
+    return true;
   }
 
   /**
-   * Compile final results for both players plus a winner determination.
-   * @returns {{ player1: object | null, player2: object | null, winner: string | null }}
+   * Get ranked results for all players (sorted by WPM desc, then accuracy).
+   * @returns {Array}
    */
-  getResults() {
-    let player1 = null;
-    let player2 = null;
+  getAllResults() {
+    const entries = [];
 
     for (const [socketId, player] of this.players) {
-      const entry = {
+      const stats = player.results || player.progress;
+      entries.push({
         socketId,
         playerId: player.id,
-        finished: player.finished,
-        ...(player.results || player.progress)
-      };
-
-      if (player.id === 'player1') {
-        player1 = entry;
-      } else {
-        player2 = entry;
-      }
+        username: player.username,
+        wpm: stats.wpm ?? 0,
+        rawWpm: stats.rawWpm ?? 0,
+        accuracy: stats.accuracy ?? 0,
+        consistency: stats.consistency ?? 0,
+        charStats: stats.charStats ?? null,
+        finished: player.finished
+      });
     }
 
-    // Determine winner by WPM (higher wins); ties go to better accuracy
-    let winner = null;
-    if (player1 && player2) {
-      const wpm1 = player1.wpm ?? 0;
-      const wpm2 = player2.wpm ?? 0;
+    // Sort: by WPM desc, then accuracy desc
+    entries.sort((a, b) => {
+      if (b.wpm !== a.wpm) return b.wpm - a.wpm;
+      return b.accuracy - a.accuracy;
+    });
 
-      if (wpm1 > wpm2) {
-        winner = 'player1';
-      } else if (wpm2 > wpm1) {
-        winner = 'player2';
+    // Assign ranks (ties get same rank)
+    let rank = 1;
+    for (let i = 0; i < entries.length; i++) {
+      if (i > 0 && entries[i].wpm === entries[i - 1].wpm && entries[i].accuracy === entries[i - 1].accuracy) {
+        entries[i].rank = entries[i - 1].rank; // same rank for tie
       } else {
-        // Tie-break on accuracy
-        const acc1 = player1.accuracy ?? 0;
-        const acc2 = player2.accuracy ?? 0;
-        if (acc1 > acc2) {
-          winner = 'player1';
-        } else if (acc2 > acc1) {
-          winner = 'player2';
-        } else {
-          winner = null; // Perfect tie — same WPM and same accuracy
-        }
+        entries[i].rank = rank;
       }
+      rank++;
     }
 
-    return { player1, player2, winner };
+    return entries;
   }
 
   // ── Cleanup ────────────────────────────────────────────────────────

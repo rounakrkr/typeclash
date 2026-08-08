@@ -7,15 +7,17 @@ const rooms = new Map();
 /** Map each socket ID to the room code it belongs to for fast lookup. */
 const socketToRoom = new Map();
 
+/** Active usernames → socketId (for uniqueness enforcement). */
+const activeUsernames = new Map(); // username → socketId
+
 /** Rematch pending: oldRoomCode → { requesterId, newRoomCode, duration } */
 const rematchPending = new Map();
 
 /**
  * Generate a unique 4-character uppercase alphanumeric room code.
- * @returns {string}
  */
 function generateRoomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/1/O/0 to avoid confusion
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code;
   do {
     code = '';
@@ -28,13 +30,41 @@ function generateRoomCode() {
 
 /**
  * Register all Socket.io event handlers on the given server instance.
- * @param {import('socket.io').Server} io
  */
 export function registerSocketHandlers(io) {
   io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
 
-    // ── room:create ────────────────────────────────────────────────
+    // ── username:check ──────────────────────────────────────────────
+    // New visitor picking a username for the first time
+    socket.on('username:check', ({ username } = {}) => {
+      if (!username || !/^[a-zA-Z0-9_]{3,16}$/.test(username)) {
+        return socket.emit('username:taken');
+      }
+      const existing = activeUsernames.get(username.toLowerCase());
+      if (existing && existing !== socket.id) {
+        return socket.emit('username:taken');
+      }
+      // Reserve username
+      activeUsernames.set(username.toLowerCase(), socket.id);
+      socket.data.username = username;
+      socket.emit('username:ok', { username });
+      console.log(`Username claimed: "${username}" by ${socket.id}`);
+    });
+
+    // ── username:register ───────────────────────────────────────────
+    // Returning visitor re-registering their saved username on reconnect
+    socket.on('username:register', ({ username } = {}) => {
+      if (!username) return;
+      const existing = activeUsernames.get(username.toLowerCase());
+      // Allow re-registration for same socket or if not taken
+      if (!existing || existing === socket.id) {
+        activeUsernames.set(username.toLowerCase(), socket.id);
+        socket.data.username = username;
+      }
+    });
+
+    // ── room:create ─────────────────────────────────────────────────
     socket.on('room:create', (data = {}) => {
       const roomCode = generateRoomCode();
       const room = new GameRoom(roomCode, {
@@ -43,60 +73,91 @@ export function registerSocketHandlers(io) {
         punctuation: data.punctuation
       });
 
-      const player = room.addPlayer(socket.id);
+      const username = socket.data.username || 'Player1';
+      const player = room.addPlayer(socket.id, username);
       rooms.set(roomCode, room);
       socketToRoom.set(socket.id, roomCode);
       socket.join(roomCode);
 
-      console.log(`Room ${roomCode} created by ${socket.id} (${player.id})`);
+      console.log(`Room ${roomCode} created by ${username} (${socket.id})`);
 
       socket.emit('room:created', {
         roomCode,
-        playerId: player.id
+        playerId: player.id,
+        players: room.getPlayersInfo()
       });
     });
 
-    // ── room:join ──────────────────────────────────────────────────
+    // ── room:join ───────────────────────────────────────────────────
     socket.on('room:join', (data = {}) => {
       const { roomCode } = data;
       const room = rooms.get(roomCode);
 
-      // Validation
       if (!room) {
         return socket.emit('room:error', { message: 'Room not found' });
       }
       if (room.isFull()) {
-        return socket.emit('room:error', { message: 'Room is full' });
+        return socket.emit('room:error', { message: 'Room is full (max 4 players)' });
       }
       if (room.state !== 'WAITING') {
         return socket.emit('room:error', { message: 'Game already in progress' });
       }
 
-      const player = room.addPlayer(socket.id);
+      const username = socket.data.username || `Player${room.players.size + 1}`;
+      const player = room.addPlayer(socket.id, username);
       socketToRoom.set(socket.id, roomCode);
       socket.join(roomCode);
 
-      console.log(`Player ${socket.id} (${player.id}) joined room ${roomCode}`);
+      console.log(`${username} (${socket.id}) joined room ${roomCode} as ${player.id}`);
 
-      // Pick the text for this match
-      room.text = getTextForRoom(room.duration);
+      const playersInfo = room.getPlayersInfo();
 
-      // Notify both players
-      io.to(roomCode).emit('room:joined', {
+      // Tell the joining player their info + full player list
+      socket.emit('room:you_joined', {
         roomCode,
-        text: room.text.text,
-        duration: room.duration,
-        players: Array.from(room.players.entries()).map(([sid, p]) => ({
-          socketId: sid,
-          playerId: p.id
-        }))
+        playerId: player.id,
+        isHost: player.isHost,
+        players: playersInfo,
+        duration: room.duration
       });
 
-      // Kick off the countdown
-      room.startCountdown(io);
+      // Tell everyone else a new player joined
+      socket.to(roomCode).emit('room:player_joined', {
+        players: playersInfo
+      });
     });
 
-    // ── player:keystroke ───────────────────────────────────────────
+    // ── room:start ──────────────────────────────────────────────────
+    // Only host can trigger this — picks text and starts countdown
+    socket.on('room:start', () => {
+      const roomCode = socketToRoom.get(socket.id);
+      if (!roomCode) return;
+
+      const room = rooms.get(roomCode);
+      if (!room) return;
+      if (!room.isHost(socket.id)) {
+        return socket.emit('room:error', { message: 'Only the host can start the game' });
+      }
+      if (room.players.size < 2) {
+        return socket.emit('room:error', { message: 'Need at least 2 players to start' });
+      }
+      if (room.state !== 'WAITING') return;
+
+      // Pick text
+      room.text = getTextForRoom(room.duration);
+
+      // Notify all players — game is starting
+      io.to(roomCode).emit('room:starting', {
+        text: room.text.text,
+        duration: room.duration,
+        players: room.getPlayersInfo()
+      });
+
+      room.startCountdown(io);
+      console.log(`Room ${roomCode} started by host ${socket.id}`);
+    });
+
+    // ── player:keystroke ────────────────────────────────────────────
     socket.on('player:keystroke', (data = {}) => {
       const roomCode = socketToRoom.get(socket.id);
       if (!roomCode) return;
@@ -106,18 +167,20 @@ export function registerSocketHandlers(io) {
 
       room.updateProgress(socket.id, data);
 
-      const opponentId = room.getOpponent(socket.id);
-      if (opponentId) {
-        const player = room.players.get(socket.id);
-        io.to(opponentId).emit('opponent:progress', {
-          position: player.progress.position,
-          wpm: player.progress.wpm,
-          accuracy: player.progress.accuracy
-        });
-      }
+      const player = room.players.get(socket.id);
+      // Broadcast progress to all OTHER players in the room
+      socket.to(roomCode).emit('opponent:progress', {
+        socketId: socket.id,
+        playerId: player.id,
+        username: player.username,
+        position: player.progress.position,
+        wpm: player.progress.wpm,
+        accuracy: player.progress.accuracy,
+        progress: player.progress.progressPct
+      });
     });
 
-    // ── player:finish ──────────────────────────────────────────────
+    // ── player:finish ───────────────────────────────────────────────
     socket.on('player:finish', (data = {}) => {
       const roomCode = socketToRoom.get(socket.id);
       if (!roomCode) return;
@@ -127,160 +190,147 @@ export function registerSocketHandlers(io) {
 
       room.playerFinished(socket.id, data);
 
-      const opponentId = room.getOpponent(socket.id);
-      if (opponentId) {
-        io.to(opponentId).emit('opponent:finish', {
-          wpm: data.wpm,
-          accuracy: data.accuracy
-        });
-      }
+      const player = room.players.get(socket.id);
+      // Notify everyone else this player finished
+      socket.to(roomCode).emit('opponent:finished', {
+        socketId: socket.id,
+        playerId: player.id,
+        username: player.username,
+        wpm: data.wpm,
+        accuracy: data.accuracy
+      });
 
-      // Check if both players are done
+      // Check if ALL players are done
       if (room.isGameOver()) {
         room.state = 'FINISHED';
         room.cleanup();
-        const results = room.getResults();
-        // Send personalized results to each player
-        for (const [sid, player] of room.players) {
-          const oppSid = room.getOpponent(sid);
-          const oppPlayer = oppSid ? room.players.get(oppSid) : null;
+        const allResults = room.getAllResults();
+        for (const [sid, p] of room.players) {
           io.to(sid).emit('game:over', {
             reason: 'complete',
-            player: player.results || player.progress,
-            opponent: oppPlayer ? (oppPlayer.results || oppPlayer.progress) : null,
-            winner: results.winner === player.id ? 'you' : (results.winner ? 'opponent' : 'draw')
+            myPlayerId: p.id,
+            allResults
           });
         }
       }
     });
 
-    // ── room:leave ─────────────────────────────────────────────────
+    // ── room:leave ──────────────────────────────────────────────────
     socket.on('room:leave', () => {
-      const roomCode = socketToRoom.get(socket.id);
-      if (roomCode) {
-        const room = rooms.get(roomCode);
-        if (room) {
-          const opponentId = room.getOpponent(socket.id);
-          room.removePlayer(socket.id);
-          if (room.isEmpty()) {
-            room.cleanup();
-            rooms.delete(roomCode);
-          } else if (opponentId) {
-            io.to(opponentId).emit('opponent:disconnected', { message: 'Opponent left the room' });
-          }
-        }
-        socketToRoom.delete(socket.id);
-        socket.leave(roomCode);
-      }
-      // Also cancel any pending rematch
-      for (const [oldCode, data] of rematchPending) {
-        if (data.requesterId === socket.id) {
-          rematchPending.delete(oldCode);
-        }
-      }
+      handleLeave(socket, io);
     });
 
-    // ── rematch:request ────────────────────────────────────────────
+    // ── rematch:request ─────────────────────────────────────────────
     socket.on('rematch:request', ({ oldRoomCode, duration }) => {
       const existing = rematchPending.get(oldRoomCode);
 
       if (existing) {
-        // Second player accepted — they become player2 in the pending new room
         const newRoom = rooms.get(existing.newRoomCode);
         if (!newRoom || newRoom.isFull()) {
           return socket.emit('room:error', { message: 'Rematch room not available' });
         }
 
-        newRoom.addPlayer(socket.id);
+        const username = socket.data.username || 'Player';
+        newRoom.addPlayer(socket.id, username);
         socketToRoom.set(socket.id, existing.newRoomCode);
         socket.join(existing.newRoomCode);
 
-        // Pick text and notify both
         newRoom.text = getTextForRoom(newRoom.duration);
-        io.to(existing.newRoomCode).emit('room:joined', {
-          roomCode: existing.newRoomCode,
+        io.to(existing.newRoomCode).emit('room:starting', {
           text: newRoom.text.text,
-          duration: newRoom.duration
+          duration: newRoom.duration,
+          players: newRoom.getPlayersInfo()
         });
 
         rematchPending.delete(oldRoomCode);
         newRoom.startCountdown(io);
         console.log(`Rematch started: ${oldRoomCode} → ${existing.newRoomCode}`);
-
       } else {
-        // First player requesting rematch — create new room, wait for opponent
         const newRoomCode = generateRoomCode();
+        const username = socket.data.username || 'Player';
         const newRoom = new GameRoom(newRoomCode, { duration });
-        newRoom.addPlayer(socket.id);
+        newRoom.addPlayer(socket.id, username);
         rooms.set(newRoomCode, newRoom);
         socketToRoom.set(socket.id, newRoomCode);
         socket.join(newRoomCode);
 
         rematchPending.set(oldRoomCode, { requesterId: socket.id, newRoomCode, duration });
-
-        // Tell this player: waiting
         socket.emit('rematch:waiting', { newRoomCode });
 
-        // Tell opponent: rematch invite
         const oldRoom = rooms.get(oldRoomCode);
         if (oldRoom) {
-          const opponentId = oldRoom.getOpponent(socket.id);
-          if (opponentId) {
-            io.to(opponentId).emit('rematch:invited', { oldRoomCode, duration });
-          }
+          socket.to(oldRoomCode).emit('rematch:invited', { oldRoomCode, duration });
         }
         console.log(`Rematch requested: ${oldRoomCode} → ${newRoomCode}`);
       }
     });
 
-    // ── disconnect ─────────────────────────────────────────────────
+    // ── disconnect ──────────────────────────────────────────────────
     socket.on('disconnect', () => {
       console.log(`Player disconnected: ${socket.id}`);
 
-      const roomCode = socketToRoom.get(socket.id);
-      if (!roomCode) return;
-
-      const room = rooms.get(roomCode);
-      if (!room) {
-        socketToRoom.delete(socket.id);
-        return;
-      }
-
-      const opponentId = room.getOpponent(socket.id);
-      room.removePlayer(socket.id);
-      socketToRoom.delete(socket.id);
-
-      if (room.isEmpty()) {
-        // No players left — tear down the room
-        room.cleanup();
-        rooms.delete(roomCode);
-        console.log(`Room ${roomCode} destroyed (empty)`);
-      } else if (opponentId) {
-        // Notify the remaining player
-        io.to(opponentId).emit('opponent:disconnected', {
-          message: 'Your opponent has disconnected'
-        });
-
-        // If the game was in progress, end it
-        if (room.state === 'PLAYING' || room.state === 'COUNTDOWN') {
-          room.state = 'FINISHED';
-          room.cleanup();
-          const oppPlayer = room.players.get(opponentId);
-          io.to(opponentId).emit('game:over', {
-            reason: 'opponent_disconnected',
-            player: oppPlayer ? (oppPlayer.results || oppPlayer.progress) : null,
-            opponent: null,
-            winner: 'you'
-          });
+      // Free username
+      if (socket.data.username) {
+        const key = socket.data.username.toLowerCase();
+        if (activeUsernames.get(key) === socket.id) {
+          activeUsernames.delete(key);
         }
       }
 
-      // Cancel any pending rematch this socket initiated
-      for (const [oldCode, data] of rematchPending) {
-        if (data.requesterId === socket.id) {
-          rematchPending.delete(oldCode);
-        }
-      }
+      handleLeave(socket, io);
     });
   });
+}
+
+/** Shared leave/disconnect logic. */
+function handleLeave(socket, io) {
+  const roomCode = socketToRoom.get(socket.id);
+  if (!roomCode) return;
+
+  const room = rooms.get(roomCode);
+  if (!room) {
+    socketToRoom.delete(socket.id);
+    return;
+  }
+
+  const wasPlaying = room.state === 'PLAYING' || room.state === 'COUNTDOWN';
+  room.removePlayer(socket.id);
+  socketToRoom.delete(socket.id);
+  socket.leave(roomCode);
+
+  if (room.isEmpty()) {
+    room.cleanup();
+    rooms.delete(roomCode);
+    console.log(`Room ${roomCode} destroyed (empty)`);
+    return;
+  }
+
+  // Notify remaining players
+  const playersInfo = room.getPlayersInfo();
+  io.to(roomCode).emit('room:player_left', {
+    socketId: socket.id,
+    players: playersInfo,
+    newHostSocketId: room.hostSocketId
+  });
+
+  // If game was in progress with only 1 left, end it
+  if (wasPlaying && room.players.size < 2) {
+    room.state = 'FINISHED';
+    room.cleanup();
+    const allResults = room.getAllResults();
+    for (const [sid, p] of room.players) {
+      io.to(sid).emit('game:over', {
+        reason: 'opponent_disconnected',
+        myPlayerId: p.id,
+        allResults
+      });
+    }
+  }
+
+  // Cancel any rematch this socket initiated
+  for (const [oldCode, data] of rematchPending) {
+    if (data.requesterId === socket.id) {
+      rematchPending.delete(oldCode);
+    }
+  }
 }
