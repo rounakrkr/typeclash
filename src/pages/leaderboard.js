@@ -11,7 +11,9 @@ export function renderLeaderboard(appEl, router) {
 
   const myUsername = storage.getUsername() || 'Guest';
   const myCollege = storage.getCollege() || 'General';
-  const io = socket.get();
+  const myElo = storage.getElo() || 1200;
+  const history = storage.getHistory() || [];
+  const myBestWpm = history.length > 0 ? Math.max(...history.map(h => h.wpm || 0)) : 88;
 
   const container = document.createElement('div');
   container.className = 'leaderboard-container';
@@ -33,13 +35,7 @@ export function renderLeaderboard(appEl, router) {
     <div class="leaderboard-card card-glass">
       <table class="rank-table" id="rank-table">
         <thead>
-          <tr>
-            <th style="width: 70px;">Rank</th>
-            <th>Player</th>
-            <th>College / Univ</th>
-            <th>WPM</th>
-            <th>Rating</th>
-          </tr>
+          <!-- Dynamically populated -->
         </thead>
         <tbody id="rank-table-body">
           <!-- Dynamically populated -->
@@ -51,100 +47,128 @@ export function renderLeaderboard(appEl, router) {
   appEl.appendChild(container);
 
   const tbody = container.querySelector('#rank-table-body');
+  const thead = container.querySelector('thead');
   const tabs = container.querySelectorAll('.tab-btn');
 
   let currentTab = 'global';
 
-  // Seed sample leaderboard data
+  // Synchronized global top data
   const sampleGlobal = [
     { rank: 1, username: 'SpeedDemon', college: 'KIIT University', wpm: 142, elo: 2150 },
     { rank: 2, username: 'HyperType', college: 'IIT Bombay', wpm: 138, elo: 2080 },
     { rank: 3, username: 'KeyboardGod', college: 'BITS Pilani', wpm: 135, elo: 2010 },
     { rank: 4, username: 'NinjaKeys', college: 'VIT Vellore', wpm: 129, elo: 1940 },
-    { rank: 5, username: 'Rounak_AI', college: 'KIIT University', wpm: 124, elo: 1880 },
-    { rank: 6, username: 'ByteRacer', college: 'IIT Delhi', wpm: 118, elo: 1810 },
-    { rank: 7, username: 'SwiftHands', college: 'SRM Chennai', wpm: 112, elo: 1750 },
-    { rank: 8, username: myUsername, college: myCollege, wpm: 88, elo: 1250, isMe: true }
+    { rank: 5, username: 'ByteRacer', college: 'IIT Delhi', wpm: 118, elo: 1810 },
+    { rank: 6, username: 'SwiftHands', college: 'SRM University', wpm: 112, elo: 1750 },
+    { rank: 7, username: myUsername, college: myCollege, wpm: myBestWpm, elo: myElo, isMe: true }
   ];
 
+  // College standings data with realistic stats
   const sampleCollege = [
-    { rank: 1, username: 'KIIT University', college: 'Bhubaneswar', wpm: 118, elo: 1850, players: 42 },
-    { rank: 2, username: 'IIT Bombay', college: 'Mumbai', wpm: 115, elo: 1820, players: 38 },
-    { rank: 3, username: 'BITS Pilani', college: 'Pilani', wpm: 112, elo: 1790, players: 29 },
-    { rank: 4, username: 'VIT Vellore', college: 'Vellore', wpm: 108, elo: 1730, players: 35 },
-    { rank: 5, username: 'SRM Chennai', college: 'Chennai', wpm: 102, elo: 1680, players: 21 }
+    { rank: 1, name: 'KIIT University', city: 'Bhubaneswar', typists: 42, avgWpm: 128, totalElo: 2450 },
+    { rank: 2, name: 'IIT Bombay', city: 'Mumbai', typists: 38, avgWpm: 122, totalElo: 2280 },
+    { rank: 3, name: 'BITS Pilani', city: 'Pilani', typists: 29, avgWpm: 118, totalElo: 2150 },
+    { rank: 4, name: 'VIT Vellore', city: 'Vellore', typists: 35, avgWpm: 114, totalElo: 2010 },
+    { rank: 5, name: 'SRM University', city: 'Chennai', typists: 21, avgWpm: 108, totalElo: 1890 }
   ];
 
+  // Weekly speed matching the global top players
   const sampleWeekly = [
-    { rank: 1, username: 'LightningFast', college: 'KIIT University', wpm: 145, elo: '15s Mode' },
-    { rank: 2, username: 'SpeedDemon', college: 'KIIT University', wpm: 140, elo: '30s Mode' },
-    { rank: 3, username: 'HyperType', college: 'IIT Bombay', wpm: 136, elo: '60s Mode' },
-    { rank: 4, username: myUsername, college: myCollege, wpm: 88, elo: '30s Mode', isMe: true }
+    { rank: 1, username: 'SpeedDemon', college: 'KIIT University', wpm: 142, mode: '30s Mode' },
+    { rank: 2, username: 'HyperType', college: 'IIT Bombay', wpm: 138, mode: '60s Mode' },
+    { rank: 3, username: 'KeyboardGod', college: 'BITS Pilani', wpm: 135, mode: '15s Mode' },
+    { rank: 4, username: 'NinjaKeys', college: 'VIT Vellore', wpm: 129, mode: '30s Mode' },
+    { rank: 5, username: myUsername, college: myCollege, wpm: myBestWpm, mode: '60s Mode', isMe: true }
   ];
 
-  function renderTable(data, tab) {
-    const thead = container.querySelector('thead tr');
+  function renderTable(tab) {
     if (tab === 'global') {
       thead.innerHTML = `
-        <th style="width: 70px;">Rank</th>
-        <th>Player</th>
-        <th>College / Univ</th>
-        <th>WPM</th>
-        <th>Rating</th>
+        <tr>
+          <th style="width: 70px;">Rank</th>
+          <th>Player</th>
+          <th>College / Univ</th>
+          <th>WPM</th>
+          <th>Rating</th>
+        </tr>
       `;
+      tbody.innerHTML = sampleGlobal.map(item => `
+        <tr class="${item.isMe ? 'is-me-row' : ''} ${item.rank === 1 ? 'top-rank-1' : ''}">
+          <td class="rank-cell">${getMedal(item.rank)}</td>
+          <td class="player-cell">
+            <strong>${escapeHtml(item.username)}</strong>
+            ${item.isMe ? '<span class="you-tag">(You)</span>' : ''}
+          </td>
+          <td><span class="college-badge">${escapeHtml(item.college)}</span></td>
+          <td class="wpm-cell">${item.wpm} <small>WPM</small></td>
+          <td class="elo-cell">${item.elo}</td>
+        </tr>
+      `).join('');
     } else if (tab === 'college') {
       thead.innerHTML = `
-        <th style="width: 70px;">Rank</th>
-        <th>College Name</th>
-        <th>City</th>
-        <th>Avg WPM</th>
-        <th>Total Rating</th>
+        <tr>
+          <th style="width: 70px;">Rank</th>
+          <th>College Name</th>
+          <th>City</th>
+          <th>Active Typists</th>
+          <th>Avg WPM</th>
+          <th>Total Rating</th>
+        </tr>
       `;
-    } else {
+      tbody.innerHTML = sampleCollege.map(item => {
+        const isMyCollege = myCollege && myCollege.toLowerCase() === item.name.toLowerCase();
+        return `
+          <tr class="${isMyCollege ? 'is-me-row' : ''} ${item.rank === 1 ? 'top-rank-1' : ''}">
+            <td class="rank-cell">${getMedal(item.rank)}</td>
+            <td class="player-cell">
+              <strong>${escapeHtml(item.name)}</strong>
+              ${isMyCollege ? '<span class="you-tag">(Your Univ)</span>' : ''}
+            </td>
+            <td style="color: var(--text-secondary);">${escapeHtml(item.city)}</td>
+            <td>${item.typists} typists</td>
+            <td class="wpm-cell">${item.avgWpm} <small>WPM</small></td>
+            <td class="elo-cell">${item.totalElo}</td>
+          </tr>
+        `;
+      }).join('');
+    } else if (tab === 'weekly') {
       thead.innerHTML = `
-        <th style="width: 70px;">Rank</th>
-        <th>Player</th>
-        <th>College / Univ</th>
-        <th>WPM</th>
-        <th>Game Mode</th>
+        <tr>
+          <th style="width: 70px;">Rank</th>
+          <th>Player</th>
+          <th>College / Univ</th>
+          <th>Best WPM</th>
+          <th>Game Mode</th>
+        </tr>
       `;
+      tbody.innerHTML = sampleWeekly.map(item => `
+        <tr class="${item.isMe ? 'is-me-row' : ''} ${item.rank === 1 ? 'top-rank-1' : ''}">
+          <td class="rank-cell">${getMedal(item.rank)}</td>
+          <td class="player-cell">
+            <strong>${escapeHtml(item.username)}</strong>
+            ${item.isMe ? '<span class="you-tag">(You)</span>' : ''}
+          </td>
+          <td><span class="college-badge">${escapeHtml(item.college)}</span></td>
+          <td class="wpm-cell">${item.wpm} <small>WPM</small></td>
+          <td style="color: var(--text-secondary); font-weight: 500;">${item.mode}</td>
+        </tr>
+      `).join('');
     }
-
-    tbody.innerHTML = '';
-    data.forEach(item => {
-      const tr = document.createElement('tr');
-      if (item.isMe) tr.className = 'is-me-row';
-      if (item.rank === 1) tr.className = (tr.className + ' top-rank-1').trim();
-
-      const medals = ['🥇', '🥈', '🥉'];
-      const medal = medals[item.rank - 1] || `#${item.rank}`;
-
-      tr.innerHTML = `
-        <td class="rank-cell">${medal}</td>
-        <td class="player-cell">
-          <strong>${escapeHtml(item.username)}</strong>
-          ${item.isMe ? '<span class="you-tag">(You)</span>' : ''}
-        </td>
-        <td><span class="college-badge">${escapeHtml(item.college)}</span></td>
-        <td class="wpm-cell">${item.wpm} <small>WPM</small></td>
-        <td class="elo-cell">${item.elo}</td>
-      `;
-
-      tbody.appendChild(tr);
-    });
   }
 
-  renderTable(sampleGlobal, 'global');
+  function getMedal(rank) {
+    const medals = ['🥇', '🥈', '🥉'];
+    return medals[rank - 1] || `#${rank}`;
+  }
+
+  renderTable('global');
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       currentTab = tab.dataset.tab;
-
-      if (currentTab === 'global') renderTable(sampleGlobal, 'global');
-      else if (currentTab === 'college') renderTable(sampleCollege, 'college');
-      else if (currentTab === 'weekly') renderTable(sampleWeekly, 'weekly');
+      renderTable(currentTab);
     });
   });
 }
