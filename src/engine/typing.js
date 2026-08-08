@@ -39,11 +39,15 @@ export class TypingEngine {
         this.spans.push(span);
       }
 
-      // trailing space (except last word)
+      // trailing space span — invisible (zero-width), only used for
+      // caret positioning when user presses Space between words
       if (wIdx < words.length - 1) {
         const sp = document.createElement('span');
         sp.textContent = ' ';
         sp.className = 'char char-pending char-space-char';
+        sp.style.width = '0';
+        sp.style.overflow = 'hidden';
+        sp.style.display = 'inline-block';
         wordEl.appendChild(sp);
         this.spans.push(sp);
       }
