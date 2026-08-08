@@ -335,6 +335,43 @@ export function registerSocketHandlers(io) {
       }
     });
 
+    // ── matchmaking:request_bot ─────────────────────────────────────
+    socket.on('matchmaking:request_bot', () => {
+      const idx = matchmakingQueue.findIndex(p => p.socketId === socket.id);
+      if (idx !== -1) matchmakingQueue.splice(idx, 1);
+
+      const username = socket.data.username || 'Player';
+      const botNames = ['🤖 RoboKeys', '⚡ CyberTyper', '🎯 SwiftFinger', '🔥 ApexTypist'];
+      const botName = botNames[Math.floor(Math.random() * botNames.length)];
+      const botElo = Math.floor(1150 + Math.random() * 100);
+
+      const roomCode = generateRoomCode();
+      const room = new GameRoom(roomCode, { duration: 60, isRanked: true });
+
+      // Add User
+      room.addPlayer(socket.id, username, 1200);
+      socketToRoom.set(socket.id, roomCode);
+      socket.join(roomCode);
+
+      // Add Bot (with virtual socket ID)
+      const botSocketId = `bot_${Date.now()}`;
+      room.addPlayer(botSocketId, botName, botElo);
+
+      rooms.set(roomCode, room);
+
+      socket.emit('matchmaking:found', { roomCode });
+
+      room.text = getTextForRoom(room.duration);
+      io.to(roomCode).emit('room:starting', {
+        text: room.text.text,
+        duration: room.duration,
+        players: room.getPlayersInfo(),
+        isRanked: true,
+        botSocketId
+      });
+      room.startCountdown(io);
+    });
+
     // ── disconnect ──────────────────────────────────────────────────
     socket.on('disconnect', () => {
       console.log(`Player disconnected: ${socket.id}`);

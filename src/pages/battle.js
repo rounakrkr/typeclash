@@ -213,6 +213,9 @@ export function renderBattle(appEl, router) {
   }
 
   // ── Start Handler ──
+  const botSocketId = state.botSocketId;
+  let botInterval = null;
+
   function onGameStart() {
     countdownOverlay.classList.add('hidden');
     setTimeout(() => { countdownOverlay.style.display = 'none'; }, 300);
@@ -220,6 +223,29 @@ export function renderBattle(appEl, router) {
     engine.start();
     timer.start();
     textDisplayEl.classList.add('typing');
+
+    // Simulate AI Bot progress if playing against bot
+    if (botSocketId) {
+      let botPos = 0;
+      const totalLen = text.length;
+      const targetWpm = Math.floor(58 + Math.random() * 18);
+      const msPerChar = (60 / (targetWpm * 5)) * 1000;
+
+      botInterval = setInterval(() => {
+        if (playerDone || botPos >= totalLen) {
+          clearInterval(botInterval);
+          if (botPos >= totalLen) {
+            onOpponentFinished({ socketId: botSocketId, wpm: targetWpm });
+          }
+          return;
+        }
+        botPos += 1;
+        const progress = Math.min(100, Math.floor((botPos / totalLen) * 100));
+        const elapsedSec = (timer.getElapsed() / 1000) || 1;
+        const currentWpm = Math.floor((botPos / 5) / (elapsedSec / 60));
+        onOpponentProgress({ socketId: botSocketId, wpm: Math.min(targetWpm + 5, currentWpm || targetWpm), progress });
+      }, msPerChar);
+    }
   }
 
   // ── Opponent Progress Handler ──
@@ -309,6 +335,7 @@ export function renderBattle(appEl, router) {
 
   // ── Cleanup ──
   function cleanup() {
+    if (botInterval) clearInterval(botInterval);
     engine.destroy();
     timer.stop();
     document.removeEventListener('keydown', shortcutHandler, true);

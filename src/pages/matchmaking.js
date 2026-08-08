@@ -27,14 +27,56 @@ export function renderMatchmaking(appEl, router) {
     </div>
   `;
 
-  appEl.appendChild(container);
+  let searchTimerVal = 0;
+  const searchTimerEl = document.createElement('p');
+  searchTimerEl.style.cssText = 'color: var(--text-secondary); margin-top: 0.5rem; font-family: monospace; font-size: 0.9rem;';
+  searchTimerEl.textContent = 'Searching time: 0s';
+
+  const box = container.querySelector('.matchmaking-box');
+  const statsEl = container.querySelector('.matchmaking-stats');
+  if (statsEl) {
+    statsEl.appendChild(searchTimerEl);
+  }
 
   const io = socket.connect();
   let matched = false;
   let activeRoomCode = null;
 
+  const timerInterval = setInterval(() => {
+    if (matched) {
+      clearInterval(timerInterval);
+      return;
+    }
+    searchTimerVal++;
+    searchTimerEl.textContent = `Searching time: ${searchTimerVal}s`;
+
+    // Show Bot Option after 4s
+    if (searchTimerVal >= 4 && !container.querySelector('#btn-bot-match')) {
+      const botBtn = document.createElement('button');
+      botBtn.id = 'btn-bot-match';
+      botBtn.className = 'btn btn-secondary';
+      botBtn.style.marginTop = '1rem';
+      botBtn.innerHTML = '🤖 Challenge AI Bot (Instant Match)';
+      botBtn.addEventListener('click', () => {
+        clearInterval(timerInterval);
+        io.emit('matchmaking:request_bot');
+      });
+      const cancelBtn = container.querySelector('#cancel-matchmaking');
+      if (cancelBtn) {
+        box.insertBefore(botBtn, cancelBtn);
+      }
+    }
+
+    // Auto-match with Bot after 9s if still waiting alone
+    if (searchTimerVal >= 9 && !matched) {
+      clearInterval(timerInterval);
+      io.emit('matchmaking:request_bot');
+    }
+  }, 1000);
+
   // Ensure we have a username before queueing
   if (!storage.getUsername()) {
+    clearInterval(timerInterval);
     router.navigate('/');
     return;
   }
@@ -45,8 +87,8 @@ export function renderMatchmaking(appEl, router) {
   // Handle Match Found
   const onMatchmakingFound = ({ roomCode }) => {
     matched = true;
+    clearInterval(timerInterval);
     activeRoomCode = roomCode;
-    const box = container.querySelector('.matchmaking-box');
     if (box) {
       box.innerHTML = `
         <div class="matchmaking-success">
@@ -60,8 +102,9 @@ export function renderMatchmaking(appEl, router) {
 
   const onRoomStarting = (data) => {
     if (!matched || !activeRoomCode) return;
-    const { text, duration, players, isRanked } = data;
-    router.navigate('/battle', { roomCode: activeRoomCode, duration, text, players, isRanked });
+    clearInterval(timerInterval);
+    const { text, duration, players, isRanked, botSocketId } = data;
+    router.navigate('/battle', { roomCode: activeRoomCode, duration, text, players, isRanked, botSocketId });
   };
 
   io.on('matchmaking:found', onMatchmakingFound);
@@ -71,6 +114,7 @@ export function renderMatchmaking(appEl, router) {
   const cancelBtn = container.querySelector('#cancel-matchmaking');
   if (cancelBtn) {
     cancelBtn.addEventListener('click', () => {
+      clearInterval(timerInterval);
       io.emit('matchmaking:leave');
       router.navigate('/');
     });
@@ -78,6 +122,7 @@ export function renderMatchmaking(appEl, router) {
 
   // Cleanup on leave
   return () => {
+    clearInterval(timerInterval);
     if (!matched) {
       io.emit('matchmaking:leave');
     }
