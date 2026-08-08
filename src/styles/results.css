@@ -1,0 +1,268 @@
+/* ══════════════════════════════════════════════
+   Results Page Styles — Premium Design
+   ══════════════════════════════════════════════ */
+
+.results-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 5rem 2rem 4rem;
+  animation: fadeInUp 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+
+/* ── Results Header ── */
+.results-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.wpm-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  filter: drop-shadow(0 0 30px rgba(108, 92, 231, 0.35));
+  animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.wpm-label {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 500;
+}
+
+/* ── Rank Badge ── */
+.rank-badge {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.4rem 1.4rem;
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s both;
+}
+
+/* ── Personal Best Badge ── */
+.personal-best-badge {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.6rem 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(255, 165, 0, 0.08));
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  color: #ffd700;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 0.9rem;
+  animation: glow 2s infinite alternate;
+}
+.personal-best-badge .pb-previous {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}
+
+/* ── Stats Grid ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+/* Enhanced stat cards */
+.stats-grid .stat-card {
+  background: linear-gradient(135deg, var(--bg-secondary), rgba(26, 26, 46, 0.5));
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition-normal);
+}
+.stats-grid .stat-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.05), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+.stats-grid .stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(108, 92, 231, 0.15);
+}
+.stats-grid .stat-card:hover::after {
+  opacity: 1;
+}
+
+/* ── Chart Container ── */
+.chart-container {
+  width: 100%;
+  height: 280px;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 2.5rem;
+  position: relative;
+  overflow: hidden;
+}
+.chart-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(108, 92, 231, 0.3), transparent);
+}
+
+/* ── Error Analysis ── */
+.error-analysis {
+  margin-bottom: 2.5rem;
+}
+.error-analysis .section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  color: var(--text-primary);
+}
+.error-perfect {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: rgba(74, 222, 128, 0.06);
+  border: 1px solid rgba(74, 222, 128, 0.15);
+  border-radius: var(--radius-lg);
+  color: var(--correct);
+  font-size: 0.9rem;
+}
+.perfect-icon {
+  font-size: 1.25rem;
+}
+
+.error-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1.5rem;
+}
+.error-column {
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+.error-column-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+/* Bar chart */
+.error-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.error-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.error-char {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--incorrect);
+  width: 1.5rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+.error-bar-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.error-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(248, 113, 113, 0.6), var(--incorrect));
+  border-radius: var(--radius-full);
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.error-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  width: 1.5rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Confusion pairs */
+.confusion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.confusion-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+}
+.confusion-pair {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+.confusion-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* ── Action Buttons ── */
+.result-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.result-actions .btn {
+  min-width: 130px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .wpm-display {
+    font-size: 5rem;
+  }
+}
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .result-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .result-actions .btn {
+    min-width: unset;
+  }
+}

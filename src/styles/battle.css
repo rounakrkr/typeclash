@@ -1,0 +1,332 @@
+/* ══════════════════════════════════════════════
+   Battle Page — Head-to-Head Typing Duel
+   ══════════════════════════════════════════════ */
+
+/* ── Countdown Overlay ── */
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(10, 10, 15, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity var(--transition-normal);
+}
+.countdown-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.countdown-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: countPulse 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  filter: drop-shadow(0 0 40px var(--accent-glow));
+}
+
+@keyframes countPulse {
+  0% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── Player Bars ── */
+.battle-players {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0 0.25rem;
+}
+
+.player-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1.25rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: var(--glass-border);
+  border-radius: var(--radius-lg);
+  min-width: 180px;
+}
+
+.player-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.player-wpm {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.player-self .player-name {
+  color: var(--accent-primary);
+}
+.player-self .player-wpm {
+  color: var(--accent-primary);
+}
+
+.player-opponent .player-name {
+  color: var(--incorrect);
+}
+.player-opponent .player-wpm {
+  color: var(--incorrect);
+}
+
+/* ── Opponent Progress Bar ── */
+.opponent-progress {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-full);
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.opponent-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--incorrect), #fb923c);
+  border-radius: var(--radius-full);
+  transition: width 0.25s ease;
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.3);
+}
+
+/* ── Battle container overrides ── */
+.battle-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 4rem 2rem 2rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+/* ══════════════════════════════════════════════
+   Match Result Page — Head-to-Head Outcome
+   ══════════════════════════════════════════════ */
+
+.match-result-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 6rem 2rem 3rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+}
+
+/* ── Outcome Header ── */
+.match-outcome {
+  text-align: center;
+  animation: fadeInDown 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.outcome-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.outcome-win .outcome-text {
+  background: linear-gradient(135deg, #4ade80, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 30px rgba(74, 222, 128, 0.4));
+}
+
+.outcome-lose .outcome-text {
+  background: linear-gradient(135deg, var(--incorrect), #fb923c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 30px rgba(248, 113, 113, 0.3));
+}
+
+.outcome-draw .outcome-text {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 30px var(--accent-glow));
+}
+
+/* ── Comparison Grid ── */
+.match-comparison {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 2rem;
+  align-items: center;
+  width: 100%;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.2s;
+}
+
+.comparison-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 1.5rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: var(--glass-border);
+  border-radius: var(--radius-xl);
+  text-align: center;
+  transition: var(--transition-normal);
+}
+.comparison-player:hover {
+  border-color: rgba(108, 92, 231, 0.12);
+}
+
+.comparison-player h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.comparison-player .big-stat {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.comparison-player.winner .big-stat {
+  color: var(--correct);
+}
+.comparison-player.loser .big-stat {
+  color: var(--text-secondary);
+}
+
+.stat-row {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.stat-row strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ── VS Divider ── */
+.vs-divider {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  opacity: 0.4;
+  letter-spacing: 0.1em;
+}
+
+/* ── Match Actions ── */
+.match-actions {
+  display: flex;
+  gap: 1rem;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.4s;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .battle-players {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .player-bar {
+    width: 100%;
+    min-width: unset;
+  }
+  .countdown-number {
+    font-size: 5rem;
+  }
+  .match-result-container {
+    padding: 5rem 1rem 2rem;
+    gap: 2rem;
+  }
+  .outcome-text {
+    font-size: 2.25rem;
+  }
+  .match-comparison {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .vs-divider {
+    display: none;
+  }
+  .comparison-player .big-stat {
+    font-size: 2rem;
+  }
+  .match-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .match-actions .btn {
+    width: 100%;
+  }
+}
+
+/* ── Rematch UI ── */
+.rematch-status {
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+  opacity: 0.8;
+  animation: pulse-opacity 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-opacity {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.rematch-invite {
+  margin-top: 1.5rem;
+  padding: 1.5rem 2rem;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  color: var(--text-primary);
+  font-size: 1rem;
+  animation: glow-border 2s ease-in-out infinite;
+}
+
+@keyframes glow-border {
+  0%, 100% { border-color: rgba(139, 92, 246, 0.3); box-shadow: none; }
+  50% { border-color: rgba(139, 92, 246, 0.7); box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); }
+}
+
