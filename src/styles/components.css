@@ -177,6 +177,10 @@
   padding: 0.4rem 0.75rem;
   border-radius: var(--radius-md);
   transition: var(--transition-fast);
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
 }
 .nav-link:hover {
   color: var(--text-primary);
