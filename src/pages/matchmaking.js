@@ -27,6 +27,8 @@ export function renderMatchmaking(appEl, router) {
     </div>
   `;
 
+  appEl.appendChild(container);
+
   let searchTimerVal = 0;
   const searchTimerEl = document.createElement('p');
   searchTimerEl.style.cssText = 'color: var(--text-secondary); margin-top: 0.5rem; font-family: monospace; font-size: 0.9rem;';
