@@ -140,18 +140,20 @@
 }
 
 .lobby-card .btn-primary {
-  width: auto;
-  padding: 0.65rem 1.4rem;
-  border-radius: 14px;
-  font-size: 0.95rem;
+  width: 160px;
+  height: 42px;
+  border-radius: 12px;
+  font-size: 0.92rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: var(--transition-fast);
+  padding: 0;
 }
 .lobby-card .btn-primary:hover {
-  transform: translateY(-1px);
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.35);
 }
 
 /* ── Waiting State ── */
