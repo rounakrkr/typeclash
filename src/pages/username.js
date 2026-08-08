@@ -13,20 +13,27 @@ export function showUsernamePrompt(io) {
     overlay.id = 'username-overlay';
     overlay.className = 'username-overlay';
 
+    const existingUser = storage.getUsername() || '';
+    const existingCollege = storage.getCollege() || '';
+
     overlay.innerHTML = `
-      <div class="username-modal card-glass">
+      <div class="username-modal card-glass" style="position: relative;">
+        ${existingUser ? `<button class="username-close-btn" id="username-close" title="Close">✕</button>` : ''}
         <div class="username-logo">
           <span class="logo-type">type</span><span class="logo-clash">clash</span>
         </div>
-        <h2 class="username-title">Welcome to TypeClash</h2>
-        <p class="username-subtitle">Choose a username and optionally add your college!</p>
+        <h2 class="username-title">${existingUser ? 'Edit Profile' : 'Welcome to TypeClash'}</h2>
+        <p class="username-subtitle">${existingUser ? 'Update your username or college affiliation' : 'Choose a username and optionally add your college!'}</p>
 
+        <div style="text-align: left; margin-bottom: 0.25rem; font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">
+          Username
+        </div>
         <div class="username-input-wrap">
           <input
             type="text"
             id="username-input"
             class="username-input"
-            placeholder="Username (e.g. SpeedTyper)"
+            placeholder="e.g. SpeedTyper"
             maxlength="16"
             autocomplete="off"
             spellcheck="false"
@@ -34,13 +41,16 @@ export function showUsernamePrompt(io) {
           <span class="username-counter" id="username-counter">0/16</span>
         </div>
 
-        <div class="username-input-wrap" style="margin-top: 1rem;">
+        <div style="text-align: left; margin-top: 1rem; margin-bottom: 0.25rem; font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">
+          College / University <small style="opacity: 0.6;">(Optional)</small>
+        </div>
+        <div class="username-input-wrap">
           <input
             type="text"
             id="college-input"
             class="username-input"
             style="font-size: 0.95rem;"
-            placeholder="College / Univ (Optional)"
+            placeholder="e.g. KIIT, VIT, IIT (Optional)"
             maxlength="32"
             autocomplete="off"
             spellcheck="false"
@@ -62,17 +72,37 @@ export function showUsernamePrompt(io) {
     const submitBtn = overlay.querySelector('#username-submit');
     const errorEl = overlay.querySelector('#username-error');
     const counter = overlay.querySelector('#username-counter');
+    const closeBtn = overlay.querySelector('#username-close');
 
-    // Pre-fill existing data if available
-    const existingUser = storage.getUsername() || '';
-    const existingCollege = storage.getCollege() || '';
+    // Pre-fill existing data if available (do not pre-fill fallback 'General')
     if (existingUser) {
       input.value = existingUser;
       counter.textContent = `${existingUser.length}/16`;
       submitBtn.disabled = !/^[a-zA-Z0-9_]{3,16}$/.test(existingUser);
     }
-    if (existingCollege) {
+    if (existingCollege && existingCollege.toLowerCase() !== 'general') {
       collegeInput.value = existingCollege;
+    }
+
+    const closeModal = () => {
+      document.removeEventListener('keydown', handleKeydown);
+      overlay.classList.remove('visible');
+      overlay.classList.add('hiding');
+      setTimeout(() => {
+        overlay.remove();
+        resolve(existingUser || 'Guest');
+      }, 300);
+    };
+
+    const handleKeydown = (e) => {
+      if (e.key === 'Escape' && existingUser) {
+        closeModal();
+      }
+    };
+    document.addEventListener('keydown', handleKeydown);
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeModal);
     }
 
     if (existingUser && !existingCollege) {
