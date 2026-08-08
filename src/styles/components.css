@@ -863,12 +863,81 @@
 }
 
 /* --- Matchmaking UI --- */
-.matchmaking-container { display: flex; align-items: center; justify-content: center; height: calc(100vh - 120px); }
-.matchmaking-box { padding: 4rem 2rem; text-align: center; max-width: 400px; width: 100%; display: flex; flex-direction: column; align-items: center; }
-.radar { position: relative; width: 100px; height: 100px; margin: 0 auto; }
-.radar-pulse { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: var(--primary); opacity: 0; animation: pulse 2s infinite ease-out; }
-.radar-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 10px var(--primary); }
-@keyframes pulse { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(2); opacity: 0; } }
+.matchmaking-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 80px);
+  padding: 4rem 1.5rem 2rem;
+}
+.matchmaking-box {
+  padding: 3.5rem 2.5rem;
+  text-align: center;
+  max-width: 440px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(108, 92, 231, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(108, 92, 231, 0.08);
+}
+
+/* High-Tech Glowing Radar Animation */
+.radar {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 1.5rem;
+  border-radius: 50%;
+  border: 2px solid rgba(108, 92, 231, 0.25);
+  box-shadow: 0 0 20px rgba(108, 92, 231, 0.15);
+}
+.radar-sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(108, 92, 231, 0.45) 360deg);
+  animation: radarSweep 2.2s linear infinite;
+}
+.radar-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid var(--accent-primary);
+  opacity: 0;
+  animation: radarPulse 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+.radar-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  box-shadow: 0 0 15px var(--accent-primary), 0 0 30px var(--accent-primary);
+  animation: radarDotPulse 1.5s ease-in-out infinite alternate;
+}
+@keyframes radarSweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes radarPulse {
+  0% { transform: scale(0.3); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes radarDotPulse {
+  0% { transform: translate(-50%, -50%) scale(0.85); box-shadow: 0 0 10px var(--accent-primary); }
+  100% { transform: translate(-50%, -50%) scale(1.2); box-shadow: 0 0 25px var(--accent-primary), 0 0 40px var(--accent-secondary); }
+}
 .matchmaking-success { animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
 /* Modal Close Button */

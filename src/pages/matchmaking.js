@@ -14,8 +14,9 @@ export function renderMatchmaking(appEl, router) {
   container.innerHTML = `
     <div class="matchmaking-box card-glass">
       <div class="radar">
+        <div class="radar-sweep"></div>
         <div class="radar-pulse"></div>
-        <div class="radar-pulse" style="animation-delay: 0.5s"></div>
+        <div class="radar-pulse" style="animation-delay: 0.8s"></div>
         <div class="radar-dot"></div>
       </div>
       <h2 style="margin-top: 2rem;">Finding Opponent...</h2>
@@ -51,29 +52,6 @@ export function renderMatchmaking(appEl, router) {
     }
     searchTimerVal++;
     searchTimerEl.textContent = `Searching time: ${searchTimerVal}s`;
-
-    // Show Bot Option after 4s
-    if (searchTimerVal >= 4 && !container.querySelector('#btn-bot-match')) {
-      const botBtn = document.createElement('button');
-      botBtn.id = 'btn-bot-match';
-      botBtn.className = 'btn btn-secondary';
-      botBtn.style.marginTop = '1rem';
-      botBtn.innerHTML = '🤖 Challenge AI Bot (Instant Match)';
-      botBtn.addEventListener('click', () => {
-        clearInterval(timerInterval);
-        io.emit('matchmaking:request_bot');
-      });
-      const cancelBtn = container.querySelector('#cancel-matchmaking');
-      if (cancelBtn) {
-        box.insertBefore(botBtn, cancelBtn);
-      }
-    }
-
-    // Auto-match with Bot after 9s if still waiting alone
-    if (searchTimerVal >= 9 && !matched) {
-      clearInterval(timerInterval);
-      io.emit('matchmaking:request_bot');
-    }
   }, 1000);
 
   // Ensure we have a username before queueing
