@@ -60,7 +60,7 @@ export function renderBattle(appEl, router) {
     playerTracks.clear();
 
     playersList.forEach(p => {
-      const isMe = p.socketId === socket.id;
+      const isMe = p.socketId === io.id;
       const track = document.createElement('div');
       track.className = `player-track ${isMe ? 'self-track' : 'opponent-track'}`;
       track.dataset.sid = p.socketId;
@@ -138,13 +138,17 @@ export function renderBattle(appEl, router) {
       liveStats.updateAccuracy(acc);
 
       // Update self track
-      const myTrack = playerTracks.get(socket.id);
+      const myTrack = playerTracks.get(io.id);
       if (myTrack) {
         myTrack.wpm.textContent = `${wpm} WPM`;
         myTrack.bar.style.width = engine.getProgress().percentage + '%';
       }
     },
-    onComplete() {}
+    onComplete() {
+      if (!playerDone) {
+        finishGame();
+      }
+    }
   });
 
   // ── Create Typing Engine ──
@@ -171,7 +175,7 @@ export function renderBattle(appEl, router) {
       const progress = engine.getProgress();
 
       // Update self track
-      const myTrack = playerTracks.get(socket.id);
+      const myTrack = playerTracks.get(io.id);
       if (myTrack) {
         myTrack.bar.style.width = progress.percentage + '%';
         myTrack.wpm.textContent = `${calculator.getWPM(timer.getElapsed())} WPM`;

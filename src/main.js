@@ -61,19 +61,25 @@ async function boot() {
 
   // If no username stored, show prompt before starting router
   if (!storage.getUsername()) {
-    // Wait for socket to connect first
     if (!io.connected) {
-      await new Promise(resolve => io.once('connect', resolve));
+      await Promise.race([
+        new Promise(resolve => io.once('connect', resolve)),
+        new Promise(resolve => setTimeout(resolve, 5000))
+      ]);
     }
     await showUsernamePrompt(io);
-  } else {
-    // Re-register username with server on reconnect
-    io.on('connect', () => {
-      io.emit('username:register', { username: storage.getUsername() });
-    });
-    if (io.connected) {
-      io.emit('username:register', { username: storage.getUsername() });
+  }
+
+  // Register reconnect listener for ALL users
+  io.on('connect', () => {
+    const name = storage.getUsername();
+    if (name) {
+      io.emit('username:register', { username: name });
     }
+  });
+
+  if (io.connected && storage.getUsername()) {
+    io.emit('username:register', { username: storage.getUsername() });
   }
 
   // Start routing

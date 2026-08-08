@@ -222,30 +222,9 @@ export function registerSocketHandlers(io) {
 
     // ── rematch:request ─────────────────────────────────────────────
     socket.on('rematch:request', ({ oldRoomCode, duration }) => {
-      const existing = rematchPending.get(oldRoomCode);
+      let pending = rematchPending.get(oldRoomCode);
 
-      if (existing) {
-        const newRoom = rooms.get(existing.newRoomCode);
-        if (!newRoom || newRoom.isFull()) {
-          return socket.emit('room:error', { message: 'Rematch room not available' });
-        }
-
-        const username = socket.data.username || 'Player';
-        newRoom.addPlayer(socket.id, username);
-        socketToRoom.set(socket.id, existing.newRoomCode);
-        socket.join(existing.newRoomCode);
-
-        newRoom.text = getTextForRoom(newRoom.duration);
-        io.to(existing.newRoomCode).emit('room:starting', {
-          text: newRoom.text.text,
-          duration: newRoom.duration,
-          players: newRoom.getPlayersInfo()
-        });
-
-        rematchPending.delete(oldRoomCode);
-        newRoom.startCountdown(io);
-        console.log(`Rematch started: ${oldRoomCode} → ${existing.newRoomCode}`);
-      } else {
+      if (!pending) {
         const newRoomCode = generateRoomCode();
         const username = socket.data.username || 'Player';
         const newRoom = new GameRoom(newRoomCode, { duration });
@@ -254,14 +233,47 @@ export function registerSocketHandlers(io) {
         socketToRoom.set(socket.id, newRoomCode);
         socket.join(newRoomCode);
 
-        rematchPending.set(oldRoomCode, { requesterId: socket.id, newRoomCode, duration });
-        socket.emit('rematch:waiting', { newRoomCode });
-
         const oldRoom = rooms.get(oldRoomCode);
+        const expectedCount = oldRoom ? oldRoom.players.size : 2;
+
+        pending = {
+          newRoomCode,
+          duration,
+          expectedCount,
+          acceptedSockets: new Set([socket.id])
+        };
+        rematchPending.set(oldRoomCode, pending);
+
+        socket.emit('rematch:waiting', { newRoomCode });
         if (oldRoom) {
           socket.to(oldRoomCode).emit('rematch:invited', { oldRoomCode, duration });
         }
         console.log(`Rematch requested: ${oldRoomCode} → ${newRoomCode}`);
+      } else {
+        const newRoom = rooms.get(pending.newRoomCode);
+        if (!newRoom || newRoom.isFull()) {
+          return socket.emit('room:error', { message: 'Rematch room full or unavailable' });
+        }
+
+        const username = socket.data.username || 'Player';
+        newRoom.addPlayer(socket.id, username);
+        socketToRoom.set(socket.id, pending.newRoomCode);
+        socket.join(pending.newRoomCode);
+        pending.acceptedSockets.add(socket.id);
+
+        if (pending.acceptedSockets.size >= pending.expectedCount || newRoom.isFull()) {
+          newRoom.text = getTextForRoom(newRoom.duration);
+          io.to(pending.newRoomCode).emit('room:starting', {
+            text: newRoom.text.text,
+            duration: newRoom.duration,
+            players: newRoom.getPlayersInfo()
+          });
+          rematchPending.delete(oldRoomCode);
+          newRoom.startCountdown(io);
+          console.log(`Rematch started: ${oldRoomCode} → ${pending.newRoomCode}`);
+        } else {
+          socket.emit('rematch:waiting', { newRoomCode: pending.newRoomCode });
+        }
       }
     });
 

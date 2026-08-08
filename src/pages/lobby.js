@@ -184,7 +184,7 @@ export function renderLobby(appEl, router) {
 
   function onPlayerLeft({ players: plist, newHostSocketId }) {
     players = plist || [];
-    if (newHostSocketId === socket.id) {
+    if (newHostSocketId === io.id) {
       isHost = true;
     }
     renderPlayerList();
@@ -219,7 +219,7 @@ export function renderLobby(appEl, router) {
       card.className = `lobby-player-slot ${p ? 'filled' : 'empty'}`;
 
       if (p) {
-        const isMe = p.socketId === socket.id;
+        const isMe = p.socketId === io.id;
         card.innerHTML = `
           <div class="player-avatar">${p.username.charAt(0).toUpperCase()}</div>
           <div class="player-details">

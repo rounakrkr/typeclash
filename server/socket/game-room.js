@@ -19,6 +19,7 @@ export class GameRoom {
     this.gameStartTime = null;
     this.countdownTimer = null;
     this.gameTimer = null;
+    this.nextPlayerNum = 1;
   }
 
   // ── Player management ──────────────────────────────────────────────
@@ -32,8 +33,7 @@ export class GameRoom {
   addPlayer(socketId, username = 'Player') {
     if (this.isFull()) return null;
 
-    const playerNumber = this.players.size + 1;
-    const playerId = `player${playerNumber}`;
+    const playerId = `player${this.nextPlayerNum++}`;
     const isHost = this.players.size === 0;
 
     const playerInfo = {

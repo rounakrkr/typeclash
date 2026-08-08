@@ -16,7 +16,7 @@ export function renderMatchResult(appEl, router) {
   const io = socket.get();
 
   // Find my entry
-  const myEntry = allResults.find(r => r.socketId === socket.id);
+  const myEntry = allResults.find(r => r.socketId === io.id);
   const myRank = myEntry ? myEntry.rank : allResults.length;
 
   let outcomeLabel = 'MATCH COMPLETE';
@@ -49,7 +49,7 @@ export function renderMatchResult(appEl, router) {
       <h3 class="leaderboard-title">🏆 Match Standings</h3>
       <div class="leaderboard-list">
         ${allResults.map((r, index) => {
-          const isMe = r.socketId === socket.id;
+          const isMe = r.socketId === io.id;
           const medals = ['🥇', '🥈', '🥉', '4️⃣'];
           const medal = medals[r.rank - 1] || `${r.rank}.`;
 
